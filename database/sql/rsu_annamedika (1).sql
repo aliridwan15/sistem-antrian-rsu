@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jan 15, 2026 at 01:17 AM
+-- Generation Time: Jan 19, 2026 at 07:53 AM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.16
 
@@ -73,7 +73,21 @@ INSERT INTO `doctors` (`id`, `name`, `created_at`, `updated_at`) VALUES
 (8, 'dr. Indah Yuliarini, Sp.T.H.T.KL', '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
 (9, 'dr. Fery Setiabudy, Sp.S', '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
 (10, 'dr. Ida Bagus Adhi P, Sp.OT', '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
-(11, 'dr. Rosida Fajariya, Sp.PD', '2026-01-14 02:11:00', '2026-01-14 02:11:00');
+(11, 'dr. Rosida Fajariya, Sp.PD', '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
+(15, 'dr. Nur Waqiah, Sp.OG, M.Kes', '2026-01-16 22:26:55', '2026-01-16 22:26:55'),
+(16, 'dr. Rony Richardo, Sp.B', '2026-01-17 00:48:32', '2026-01-17 00:48:32'),
+(17, 'dr. Donny Valiandra, Sp.PD', '2026-01-17 00:52:57', '2026-01-17 00:52:57'),
+(18, 'dr. Yasmita Rahajeng, Sp.PD', '2026-01-17 00:53:55', '2026-01-17 00:53:55'),
+(19, 'dr. Rosida Fajariya, Sp.PD', '2026-01-17 00:56:29', '2026-01-17 00:56:29'),
+(20, 'dr. Mohammad Edwin Prasetyo, Sp.PD', '2026-01-17 00:58:30', '2026-01-17 00:58:30'),
+(21, 'dr. Primita Ayu Damayanti, Sp.N', '2026-01-17 01:02:31', '2026-01-17 01:02:31'),
+(22, 'dr. Ima Wiryani Sofyan, Sp.T.H.T.KL', '2026-01-17 01:04:56', '2026-01-17 01:04:56'),
+(23, 'dr. Andri Eko P, Sp.P', '2026-01-17 01:07:00', '2026-01-17 01:07:00'),
+(24, 'dr. Lia Priscilia Purnama Putri, Sp.P', '2026-01-17 01:08:29', '2026-01-17 01:08:29'),
+(25, 'dr. Arief Rahman Hakim, Sp.JP', '2026-01-17 01:09:51', '2026-01-17 01:09:51'),
+(27, 'dr. Ari Alauddin Mawdudi, Sp.U.M.Ked.klin', '2026-01-17 01:15:00', '2026-01-17 01:15:00'),
+(28, 'dr. Mohammad Haikal Bakry, Sp.M', '2026-01-17 01:16:45', '2026-01-17 01:16:45'),
+(29, 'dr. Indah Sulistyani, Sp.A', '2026-01-17 01:37:36', '2026-01-17 01:37:36');
 
 -- --------------------------------------------------------
 
@@ -84,61 +98,58 @@ INSERT INTO `doctors` (`id`, `name`, `created_at`, `updated_at`) VALUES
 CREATE TABLE `doctor_poli` (
   `id` bigint UNSIGNED NOT NULL,
   `doctor_id` bigint UNSIGNED NOT NULL,
-  `poli_id` bigint UNSIGNED NOT NULL
+  `poli_id` bigint UNSIGNED NOT NULL,
+  `day` varchar(255) NOT NULL,
+  `time` varchar(100) NOT NULL,
+  `note` varchar(255) DEFAULT NULL,
+  `status` enum('Aktif','OFF') NOT NULL DEFAULT 'Aktif',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `doctor_poli`
 --
 
-INSERT INTO `doctor_poli` (`id`, `doctor_id`, `poli_id`) VALUES
-(1, 1, 1),
-(2, 2, 1),
-(3, 3, 2),
-(4, 4, 2),
-(5, 5, 3),
-(6, 6, 4),
-(7, 11, 4),
-(8, 9, 7),
-(9, 8, 8),
-(10, 7, 9),
-(11, 10, 10),
-(16, 1, 14);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `doctor_schedules`
---
-
-CREATE TABLE `doctor_schedules` (
-  `id` bigint UNSIGNED NOT NULL,
-  `doctor_id` bigint UNSIGNED NOT NULL,
-  `poli_id` bigint UNSIGNED NOT NULL,
-  `day` enum('senin','selasa','rabu','kamis','jumat','sabtu','minggu') NOT NULL,
-  `time` varchar(100) NOT NULL,
-  `note` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `doctor_schedules`
---
-
-INSERT INTO `doctor_schedules` (`id`, `doctor_id`, `poli_id`, `day`, `time`, `note`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 'senin', '12.30 - Selesai', NULL, '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
-(2, 2, 1, 'senin', '15.30 - Selesai', NULL, '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
-(3, 3, 2, 'senin', '15.00 - Selesai', NULL, '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
-(4, 5, 3, 'senin', '06.00 - Selesai', NULL, '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
-(5, 4, 2, 'selasa', '06.30 - Selesai', NULL, '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
-(6, 6, 4, 'selasa', '14.00 - Selesai', NULL, '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
-(7, 1, 1, 'rabu', '12.00 - Selesai', NULL, '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
-(8, 7, 9, 'rabu', '16.00 - Selesai', NULL, '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
-(9, 8, 8, 'kamis', '14.30 - Selesai', NULL, '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
-(10, 9, 7, 'jumat', '14.00 - Selesai (Sore)', NULL, '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
-(11, 10, 10, 'sabtu', '14.00 - Selesai', NULL, '2026-01-14 02:11:00', '2026-01-14 02:11:00'),
-(12, 11, 15, 'sabtu', '09.00 - 12.00', 'Membuat Janji Terlebih Dahulu', '2026-01-14 02:11:00', '2026-01-14 02:11:00');
+INSERT INTO `doctor_poli` (`id`, `doctor_id`, `poli_id`, `day`, `time`, `note`, `status`, `created_at`, `updated_at`) VALUES
+(2, 2, 1, 'Senin, Selasa, Kamis', '15.30 - Selesai', NULL, 'Aktif', '2026-01-15 07:52:20', '2026-01-16 22:22:00'),
+(3, 3, 2, 'Senin, Selasa, Rabu, Kamis, Jumat', '15.00 - Selesai', NULL, 'Aktif', '2026-01-15 07:52:20', '2026-01-16 22:28:22'),
+(4, 5, 3, 'Senin, Selasa, Rabu, Kamis, Jumat', '06.00 - Selesai', NULL, 'Aktif', '2026-01-15 07:52:20', '2026-01-17 00:46:52'),
+(5, 4, 2, 'Selasa, Rabu', '06.30 - Selesai', NULL, 'Aktif', '2026-01-15 07:52:20', '2026-01-16 22:28:59'),
+(6, 6, 4, 'Senin, Selasa, Kamis, Sabtu', '14.00 - Selesai', NULL, 'Aktif', '2026-01-15 07:52:20', '2026-01-17 00:51:54'),
+(8, 7, 9, 'Rabu', '16.00 - Selesai', NULL, 'Aktif', '2026-01-15 07:52:20', '2026-01-17 01:22:21'),
+(9, 8, 8, 'Senin, Selasa, Rabu, Kamis', '14.30 - Selesai', NULL, 'Aktif', '2026-01-15 07:52:20', '2026-01-17 01:03:18'),
+(10, 9, 7, 'Jumat', '14.00 - Selesai (Sore)', NULL, 'Aktif', '2026-01-15 07:52:20', '2026-01-19 00:23:25'),
+(11, 10, 10, 'Sabtu', '14.00 - Selesai', NULL, 'Aktif', '2026-01-15 07:52:20', '2026-01-19 00:22:06'),
+(12, 11, 15, 'Sabtu', '09.00 - 12.00', 'Membuat Janji Terlebih Dahulu', 'Aktif', '2026-01-15 07:52:20', '2026-01-17 01:37:03'),
+(51, 1, 1, 'Senin, Jumat', '12.30 - Selesai', NULL, 'Aktif', '2026-01-16 22:14:29', '2026-01-16 22:20:06'),
+(52, 1, 14, 'Senin, Jumat', '12.30 - Selesai', NULL, 'Aktif', '2026-01-16 22:14:29', '2026-01-16 22:20:06'),
+(53, 1, 1, 'Rabu, Kamis', '12.00 - Selesai', NULL, 'Aktif', '2026-01-16 22:14:29', '2026-01-16 22:20:06'),
+(54, 1, 14, 'Rabu, Kamis', '12.00 - Selesai', NULL, 'Aktif', '2026-01-16 22:14:29', '2026-01-16 22:20:06'),
+(55, 1, 1, 'Sabtu', '08.00 - Selesai', NULL, 'Aktif', '2026-01-16 22:14:29', '2026-01-16 22:20:06'),
+(56, 1, 14, 'Sabtu', '08.00 - Selesai', NULL, 'Aktif', '2026-01-16 22:14:29', '2026-01-16 22:20:06'),
+(57, 2, 1, 'Sabtu', '14.30 - Selesai', NULL, 'Aktif', '2026-01-16 22:22:00', '2026-01-16 22:22:00'),
+(59, 15, 2, 'Senin, Rabu, Kamis', '12.30 - Selesai', NULL, 'Aktif', '2026-01-16 22:26:55', '2026-01-16 22:26:55'),
+(60, 16, 3, 'Senin, Selasa, Jumat', '17.00-Selesai', NULL, 'Aktif', '2026-01-17 00:48:32', '2026-01-17 00:48:49'),
+(61, 17, 4, 'Senin, Kamis', '08.00-Selesai', NULL, 'Aktif', '2026-01-17 00:52:57', '2026-01-17 00:52:57'),
+(62, 18, 4, 'Senin, Selasa, Rabu, Kamis, Jumat', '15.00 - Selesai', NULL, 'Aktif', '2026-01-17 00:53:55', '2026-01-17 00:54:10'),
+(63, 19, 4, 'Senin, Rabu, Jumat', '20.00-Selesai', NULL, 'Aktif', '2026-01-17 00:56:29', '2026-01-17 00:56:29'),
+(64, 19, 4, 'Selasa, Kamis', '15.00-Selesai', NULL, 'Aktif', '2026-01-17 00:56:29', '2026-01-17 00:56:29'),
+(65, 20, 4, 'Senin, Kamis', '10.00-Selesai', NULL, 'Aktif', '2026-01-17 00:58:30', '2026-01-17 00:58:30'),
+(66, 20, 4, 'Selasa, Rabu, Jumat', '08.00-Selesai', NULL, 'Aktif', '2026-01-17 00:58:30', '2026-01-17 00:58:30'),
+(67, 21, 7, 'Senin, Selasa, Rabu, Kamis', '17.00-Selesai', NULL, 'Aktif', '2026-01-17 01:02:31', '2026-01-17 01:02:31'),
+(68, 22, 8, 'Senin, Selasa, Kamis, Jumat', '09.00-Selesai', NULL, 'Aktif', '2026-01-17 01:04:56', '2026-01-17 01:05:28'),
+(69, 23, 5, 'Senin, Selasa, Rabu, Kamis, Jumat', '14.05-Selesai', NULL, 'Aktif', '2026-01-17 01:07:00', '2026-01-17 01:07:00'),
+(70, 24, 5, 'Selasa, Kamis', '16.00-Selesai', NULL, 'Aktif', '2026-01-17 01:08:29', '2026-01-17 01:08:29'),
+(71, 24, 5, 'Sabtu', '09.00-Selesai', NULL, 'Aktif', '2026-01-17 01:08:29', '2026-01-17 01:08:29'),
+(72, 25, 6, 'Senin, Rabu, Kamis', '15.00 - Selesai', NULL, 'Aktif', '2026-01-17 01:09:51', '2026-01-17 01:09:51'),
+(74, 27, 11, 'Senin', '08.00-Selesai', NULL, 'Aktif', '2026-01-17 01:15:00', '2026-01-17 01:15:00'),
+(75, 27, 11, 'Selasa', '14.00 - Selesai', NULL, 'Aktif', '2026-01-17 01:15:00', '2026-01-17 01:15:00'),
+(76, 27, 11, 'Rabu', '09.00-Selesai', NULL, 'Aktif', '2026-01-17 01:15:00', '2026-01-17 01:15:00'),
+(77, 27, 11, 'Kamis', '13.00-Selesai', NULL, 'Aktif', '2026-01-17 01:15:00', '2026-01-17 01:15:00'),
+(78, 28, 13, 'Senin, Selasa, Sabtu', '08.00-Selesai', NULL, 'Aktif', '2026-01-17 01:16:45', '2026-01-17 01:16:45'),
+(79, 29, 1, 'OFF', 'OFF', NULL, 'OFF', '2026-01-17 01:37:36', '2026-01-17 01:37:36'),
+(80, 29, 14, 'OFF', 'OFF', NULL, 'OFF', '2026-01-17 01:37:36', '2026-01-17 01:37:36');
 
 -- --------------------------------------------------------
 
@@ -279,8 +290,10 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('io8q4kGBSDwshacxUZnlVHxMU9EAfpTnOXEFOKSM', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiUWRlamxLdWh4aWQzUk5yZkNBUTVPaFZuQUxlVkRzM2MyWllFdjFUeiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly9zaXN0ZW0tYW50cmlhbi50ZXN0L2FkbWluL2RhdGEtZG9rdGVyIjtzOjU6InJvdXRlIjtzOjE4OiJhZG1pbi5kb2t0ZXIuaW5kZXgiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTozO30=', 1768362587),
-('wmLducrsZxkh3b043TzyLozGQVKx9VRwNR1iRbI2', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Herd/1.24.0 Chrome/120.0.6099.291 Electron/28.2.5 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiYmZqa0tvMDNWVkxUNGpLbjJKbWtSNVhpZkl0Vk9oSkw2Q1NDUlJPdCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDA6Imh0dHA6Ly9zaXN0ZW0tYW50cmlhbi50ZXN0Lz9oZXJkPXByZXZpZXciO3M6NToicm91dGUiO3M6NDoiaG9tZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1768353442);
+('G6HxRS3qxWB0lJ2nQS1Ol7WKr6wcGm30lNd0kabM', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Herd/1.24.0 Chrome/120.0.6099.291 Electron/28.2.5 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiRVRla1NhUnZWUUU1OXFxeGV1VkpidWZTWEdhT1BsUGxzcTVQUXVOViI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDA6Imh0dHA6Ly9zaXN0ZW0tYW50cmlhbi50ZXN0Lz9oZXJkPXByZXZpZXciO3M6NToicm91dGUiO3M6NDoiaG9tZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1768807049),
+('gB2Cj1KeZRdeXWFx8erS6vTiu142rfaQh83zDlor', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Herd/1.24.0 Chrome/120.0.6099.291 Electron/28.2.5 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiczcyblQ5Y0h1YU82YTRSb1R3dWlZSERxblpnc0FCbXF0dVhqSUROOSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDA6Imh0dHA6Ly9zaXN0ZW0tYW50cmlhbi50ZXN0Lz9oZXJkPXByZXZpZXciO3M6NToicm91dGUiO3M6NDoiaG9tZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1768807052),
+('IjOWsryBYY6IK0A8NEi4mn44UncyPukuYUMrDloj', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Herd/1.24.0 Chrome/120.0.6099.291 Electron/28.2.5 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoieG5nUVl0SUF1T0ZnbkhUQ1hYQXY3Wklqb3oyUFRWRWY0NTNzMFBRYSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDA6Imh0dHA6Ly9zaXN0ZW0tYW50cmlhbi50ZXN0Lz9oZXJkPXByZXZpZXciO3M6NToicm91dGUiO3M6NDoiaG9tZSI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1768806824),
+('JDAB8EUMNSpUoaCqZbQxx11Xx1TR85aPF88S9iiP', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiRWw2dVlWVmNhVkNXcFFTWTI5ME9kMnFpVWVBMFF6ZlRXTTI2UGxXVyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjY6Imh0dHA6Ly9zaXN0ZW0tYW50cmlhbi50ZXN0IjtzOjU6InJvdXRlIjtzOjQ6ImhvbWUiO319', 1768807451);
 
 -- --------------------------------------------------------
 
@@ -339,14 +352,6 @@ ALTER TABLE `doctor_poli`
   ADD PRIMARY KEY (`id`),
   ADD KEY `doctor_poli_doctor_id_foreign` (`doctor_id`),
   ADD KEY `doctor_poli_poli_id_foreign` (`poli_id`);
-
---
--- Indexes for table `doctor_schedules`
---
-ALTER TABLE `doctor_schedules`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `doctor_id` (`doctor_id`),
-  ADD KEY `poli_id` (`poli_id`);
 
 --
 -- Indexes for table `failed_jobs`
@@ -409,19 +414,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `doctors`
 --
 ALTER TABLE `doctors`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `doctor_poli`
 --
 ALTER TABLE `doctor_poli`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
-
---
--- AUTO_INCREMENT for table `doctor_schedules`
---
-ALTER TABLE `doctor_schedules`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=81;
 
 --
 -- AUTO_INCREMENT for table `failed_jobs`
@@ -463,13 +462,6 @@ ALTER TABLE `users`
 ALTER TABLE `doctor_poli`
   ADD CONSTRAINT `doctor_poli_doctor_id_foreign` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `doctor_poli_poli_id_foreign` FOREIGN KEY (`poli_id`) REFERENCES `polis` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `doctor_schedules`
---
-ALTER TABLE `doctor_schedules`
-  ADD CONSTRAINT `doctor_schedules_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `doctor_schedules_ibfk_2` FOREIGN KEY (`poli_id`) REFERENCES `polis` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

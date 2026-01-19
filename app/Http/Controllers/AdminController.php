@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Doctor;
 use App\Models\Poli;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
     private function getPolis()
     {
-        return Poli::all();
+        return Poli::orderBy('name', 'asc')->get();
     }
 
     public function index()
@@ -19,16 +20,30 @@ class AdminController extends Controller
         return view('admin.dashboard', compact('polis'));
     }
 
-    // =================================================
-    // CRUD DOKTER (MANY-TO-MANY)
-    // =================================================
-
-    // 1. READ
-    public function dokterIndex() 
+    // 1. READ (SORTING & FILTERING)
+    public function dokterIndex(Request $request) 
     {
         $polis = $this->getPolis(); 
-        // Ambil dokter beserta relasi polis-nya
-        $doctors = Doctor::with('polis')->orderBy('created_at', 'desc')->get();
+        
+        // Start Query
+        $query = Doctor::with(['polis' => function($q) {
+            $q->orderBy('name', 'asc');
+        }]);
+
+        // LOGIKA FILTER: Jika ada poli_id di URL, filter dokternya
+        if ($request->has('poli_id') && $request->poli_id != '') {
+            $query->whereHas('polis', function($q) use ($request) {
+                $q->where('polis.id', $request->poli_id);
+            });
+        }
+
+        $doctors = $query->get();
+
+        // LOGIKA SORTING TAMPILAN:
+        // Urutkan berdasarkan nama poli pertama (agar rapi secara visual)
+        $doctors = $doctors->sortBy(function($doctor) {
+            return $doctor->polis->first()->name ?? 'zzzz';
+        })->values();
 
         return view('admin.data-dokter', compact('polis', 'doctors'));
     }
@@ -37,51 +52,147 @@ class AdminController extends Controller
     public function dokterStore(Request $request) 
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'poli_id' => 'required|array', // Harus array
-            'poli_id.*' => 'exists:polis,id', // Tiap item array harus valid
+            'name'              => 'required|string|max:255',
+            'schedule'          => 'required|array',
+            'schedule.*.poli_id'=> 'required|array',     
+            'schedule.*.poli_id.*' => 'exists:polis,id',
+            'schedule.*.status' => 'required',
+            'schedule.*.day'    => 'nullable',
+            'schedule.*.time'   => 'nullable',
+            'schedule.*.note'   => 'nullable',
         ]);
 
-        // Buat Dokter dulu
-        $doctor = Doctor::create([
-            'name' => $request->name,
-        ]);
+        try {
+            DB::beginTransaction();
 
-        // Simpan relasi poli ke tabel pivot
-        $doctor->polis()->attach($request->poli_id);
+            $doctor = Doctor::create([
+                'name' => $request->name,
+            ]);
 
-        return redirect()->route('admin.dokter.index')->with('success', 'Data dokter berhasil ditambahkan.');
+            foreach ($request->schedule as $item) {
+                $status = $item['status'] ?? 'Aktif';
+                
+                if ($status === 'OFF') {
+                    $day  = 'OFF';
+                    $time = 'OFF';
+                } else {
+                    $day  = $item['day'] ?? '-';
+                    $time = $item['time'] ?? '-';
+                }
+                $note = $item['note'] ?? null;
+
+                if (isset($item['poli_id']) && is_array($item['poli_id'])) {
+                    foreach ($item['poli_id'] as $poliId) {
+                        $doctor->polis()->attach($poliId, [
+                            'day'    => $day,
+                            'time'   => $time,
+                            'note'   => $note,
+                            'status' => $status,
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('admin.dokter.index')->with('success', 'Data dokter berhasil ditambahkan.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 
     // 3. UPDATE
     public function dokterUpdate(Request $request, $id) 
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'poli_id' => 'required|array',
-            'poli_id.*' => 'exists:polis,id',
+            'name'              => 'required|string|max:255',
+            'schedule'          => 'required|array',
+            'schedule.*.poli_id'=> 'required|array',
+            'schedule.*.poli_id.*' => 'exists:polis,id',
+            'schedule.*.status' => 'required',
         ]);
 
-        $doctor = Doctor::findOrFail($id);
-        
-        // Update Nama Dokter
-        $doctor->update([
-            'name' => $request->name,
-        ]);
+        try {
+            DB::beginTransaction();
 
-        // Sync akan otomatis menghapus poli lama dan ganti dengan yang baru
-        $doctor->polis()->sync($request->poli_id);
+            $doctor = Doctor::findOrFail($id);
+            $doctor->update(['name' => $request->name]);
 
-        return redirect()->route('admin.dokter.index')->with('success', 'Data dokter berhasil diperbarui.');
+            $existingData = DB::table('doctor_poli')
+                                ->where('doctor_id', $id)
+                                ->get()
+                                ->groupBy('poli_id'); 
+
+            $processedIds = [];
+
+            foreach ($request->schedule as $item) {
+                $status = $item['status'] ?? 'Aktif';
+
+                if ($status === 'OFF') {
+                    $day  = 'OFF';
+                    $time = 'OFF';
+                } else {
+                    $day  = $item['day'] ?? '-';
+                    $time = $item['time'] ?? '-';
+                }
+                $note = $item['note'] ?? null;
+
+                if (isset($item['poli_id']) && is_array($item['poli_id'])) {
+                    foreach ($item['poli_id'] as $poliId) {
+                        
+                        $existingRecord = null;
+                        if ($existingData->has($poliId) && $existingData[$poliId]->isNotEmpty()) {
+                            $existingRecord = $existingData[$poliId]->shift();
+                        }
+
+                        if ($existingRecord) {
+                            DB::table('doctor_poli')
+                                ->where('id', $existingRecord->id)
+                                ->update([
+                                    'day'        => $day,
+                                    'time'       => $time,
+                                    'note'       => $note,
+                                    'status'     => $status,
+                                    'updated_at' => now(),
+                                ]);
+                            $processedIds[] = $existingRecord->id;
+                        } else {
+                            $newId = DB::table('doctor_poli')->insertGetId([
+                                'doctor_id'  => $id,
+                                'poli_id'    => $poliId,
+                                'day'        => $day,
+                                'time'       => $time,
+                                'note'       => $note,
+                                'status'     => $status,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                            $processedIds[] = $newId;
+                        }
+                    }
+                }
+            }
+
+            $idsToDelete = $existingData->flatten()->pluck('id')->toArray();
+            if (!empty($idsToDelete)) {
+                DB::table('doctor_poli')->whereIn('id', $idsToDelete)->delete();
+            }
+
+            DB::commit();
+            return redirect()->route('admin.dokter.index')->with('success', 'Data dokter berhasil diperbarui.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal update: ' . $e->getMessage());
+        }
     }
 
     // 4. DELETE
     public function dokterDestroy($id) 
     {
         $doctor = Doctor::findOrFail($id);
-        // Data di tabel pivot otomatis hilang karena ON DELETE CASCADE di SQL
         $doctor->delete();
-
         return redirect()->route('admin.dokter.index')->with('success', 'Data dokter berhasil dihapus.');
     }
 }

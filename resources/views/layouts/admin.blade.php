@@ -15,6 +15,7 @@
             --rs-green-light: #e0f2ef;
             --sidebar-width: 260px;
             --text-color: #334155;
+            --topbar-height: 60px; /* Tinggi navbar mobile */
         }
 
         body {
@@ -22,9 +23,11 @@
             min-height: 100vh;
             display: flex;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            overflow-x: hidden; /* Mencegah scroll horizontal */
         }
 
-        /* --- SIDEBAR LIGHT MODE --- */
+        /* --- SIDEBAR STYLE --- */
         .sidebar {
             width: var(--sidebar-width);
             background: #ffffff;
@@ -33,11 +36,12 @@
             top: 0;
             left: 0;
             height: 100%;
-            z-index: 1000;
+            z-index: 1050; /* Di atas elemen lain */
             padding-top: 20px;
             border-right: 1px solid #e2e8f0;
             overflow-y: auto;
             box-shadow: 2px 0 10px rgba(0,0,0,0.02);
+            transition: transform 0.3s ease-in-out;
         }
 
         .sidebar-brand {
@@ -52,7 +56,7 @@
         .sidebar-brand img {
             max-width: 100%;
             height: auto;
-            max-height: 70px;
+            max-height: 60px;
             object-fit: contain;
         }
 
@@ -65,6 +69,7 @@
             transition: all 0.2s ease-in-out;
             margin: 4px 15px;
             border-radius: 8px;
+            text-decoration: none;
         }
 
         .nav-link i {
@@ -101,17 +106,84 @@
             transform: translateX(5px);
         }
 
+        /* --- MAIN CONTENT --- */
         .main-content {
             margin-left: var(--sidebar-width);
             flex: 1;
             padding: 30px;
+            transition: margin-left 0.3s ease-in-out;
+            width: 100%; /* Pastikan full width */
+        }
+
+        /* --- MOBILE TOGGLE & OVERLAY --- */
+        .mobile-toggle {
+            display: none; /* Hidden di desktop */
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1060;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--rs-green);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1040;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        /* --- RESPONSIVE MEDIA QUERIES --- */
+        @media (max-width: 991.98px) {
+            /* 1. Sembunyikan sidebar secara default (geser ke kiri) */
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            /* 2. Main content jadi full width */
+            .main-content {
+                margin-left: 0;
+                padding: 70px 20px 20px 20px; /* Padding top ditambah agar tidak ketutup tombol toggle */
+            }
+
+            /* 3. Tampilkan tombol toggle */
+            .mobile-toggle {
+                display: block;
+            }
+
+            /* 4. Class 'show' untuk menampilkan sidebar */
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            /* 5. Tampilkan overlay saat sidebar terbuka */
+            .sidebar-overlay.show {
+                display: block;
+                opacity: 1;
+            }
         }
     </style>
 </head>
 <body>
 
-    {{-- 1. SIDEBAR (Light Mode) --}}
-    <nav class="sidebar">
+    {{-- TOMBOL TOGGLE MOBILE --}}
+    <button class="mobile-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list fs-4"></i>
+    </button>
+
+    {{-- OVERLAY GELAP --}}
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    {{-- 1. SIDEBAR --}}
+    <nav class="sidebar" id="sidebarMenu">
         
         {{-- BAGIAN LOGO --}}
         <div class="sidebar-brand">
@@ -135,10 +207,10 @@
             {{-- Isi Dropdown Poli --}}
             <div class="collapse {{ request()->is('admin/antrian*') ? 'show' : '' }}" id="submenuPoli">
                 <div class="py-1">
-                    @if(isset($polis))
+                    @if(isset($polis) && $polis->count() > 0)
                         @foreach($polis as $p)
                             <a href="#" class="nav-link submenu-link">
-                                {{ $p['nama'] }}
+                                {{ $p->name }} 
                             </a>
                         @endforeach
                     @else
@@ -147,7 +219,7 @@
                 </div>
             </div>
 
-            {{-- Menu Data Dokter (UPDATED LINK) --}}
+            {{-- Menu Data Dokter --}}
             <a href="{{ route('admin.dokter.index') }}" class="nav-link {{ request()->routeIs('admin.dokter*') ? 'active' : '' }}">
                 <i class="bi bi-person-video2"></i> Data Dokter
             </a>
@@ -176,5 +248,21 @@
 
     {{-- Script Bootstrap --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    {{-- Script Toggle Sidebar --}}
+    <script>
+        const sidebar = document.getElementById('sidebarMenu');
+        const overlay = document.querySelector('.sidebar-overlay');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+        }
+    </script>
 </body>
 </html>
