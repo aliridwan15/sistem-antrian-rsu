@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         // 1. Tabel Users
@@ -18,25 +15,19 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            
-            // --- PERBAIKAN UTAMA DISINI ---
-            // Menambahkan kolom role dengan default 'pasien'
-            // Agar LoginController bisa membaca apakah user ini admin atau pasien
-            $table->string('role')->default('pasien'); 
-            // ------------------------------
-
+            $table->string('role')->default('pasien'); // Kolom tambahan dari SQL Anda
             $table->rememberToken();
             $table->timestamps();
         });
 
-        // 2. Tabel Password Reset Tokens
+        // 2. Password Reset Tokens
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
 
-        // 3. Tabel Sessions (Penting agar error 'sessions table not found' hilang)
+        // 3. Sessions
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->foreignId('user_id')->nullable()->index();
@@ -47,9 +38,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');
