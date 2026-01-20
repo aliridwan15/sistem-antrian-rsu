@@ -28,11 +28,6 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Logout
-|--------------------------------------------------------------------------
-*/
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 /*
@@ -43,24 +38,25 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::middleware('auth')->group(function () {
 
     // === USER / PASIEN ===
-    Route::post('/ambil-antrian', [HomeController::class, 'storeAntrian'])
-        ->name('antrian.store');
+    Route::post('/ambil-antrian', [HomeController::class, 'storeAntrian'])->name('antrian.store');
 
     // === ADMIN ===
-    // Prefix URL: /admin/...
-    // Prefix Name: admin. (misal: admin.dashboard, admin.dokter.index)
     Route::prefix('admin')->name('admin.')->group(function () {
         
         // Dashboard
         Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
 
-        // --- CRUD DATA DOKTER (INI YANG TADINYA HILANG) ---
-        Route::get('/data-dokter', [AdminController::class, 'dokterIndex'])->name('dokter.index');       // admin.dokter.index
-        Route::get('/data-dokter/create', [AdminController::class, 'dokterCreate'])->name('dokter.create'); // admin.dokter.create
-        Route::post('/data-dokter', [AdminController::class, 'dokterStore'])->name('dokter.store');      // admin.dokter.store
-        Route::get('/data-dokter/{id}/edit', [AdminController::class, 'dokterEdit'])->name('dokter.edit');  // admin.dokter.edit
-        Route::put('/data-dokter/{id}', [AdminController::class, 'dokterUpdate'])->name('dokter.update');   // admin.dokter.update
-        Route::delete('/data-dokter/{id}', [AdminController::class, 'dokterDestroy'])->name('dokter.destroy'); // admin.dokter.destroy
+        // --- CRUD DATA DOKTER ---
+        Route::get('/data-dokter', [AdminController::class, 'dokterIndex'])->name('dokter.index');
+        Route::post('/data-dokter', [AdminController::class, 'dokterStore'])->name('dokter.store');
+        Route::put('/data-dokter/{id}', [AdminController::class, 'dokterUpdate'])->name('dokter.update');
+        Route::delete('/data-dokter/{id}', [AdminController::class, 'dokterDestroy'])->name('dokter.destroy');
+
+        // --- CRUD DATA POLI (BARU) ---
+        Route::get('/data-poli', [AdminController::class, 'poliIndex'])->name('poli.index');
+        Route::post('/data-poli', [AdminController::class, 'poliStore'])->name('poli.store');
+        Route::put('/data-poli/{id}', [AdminController::class, 'poliUpdate'])->name('poli.update');
+        Route::delete('/data-poli/{id}', [AdminController::class, 'poliDestroy'])->name('poli.destroy');
     });
 
 });

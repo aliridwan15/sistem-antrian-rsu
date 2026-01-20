@@ -7,7 +7,8 @@
     
     {{-- Bootstrap & Icons --}}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+   {{-- Bootstrap Icons Terbaru --}}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <style>
         :root {
@@ -15,7 +16,7 @@
             --rs-green-light: #e0f2ef;
             --sidebar-width: 260px;
             --text-color: #334155;
-            --topbar-height: 60px; /* Tinggi navbar mobile */
+            --topbar-height: 60px;
         }
 
         body {
@@ -24,7 +25,7 @@
             display: flex;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            overflow-x: hidden; /* Mencegah scroll horizontal */
+            overflow-x: hidden;
         }
 
         /* --- SIDEBAR STYLE --- */
@@ -36,7 +37,7 @@
             top: 0;
             left: 0;
             height: 100%;
-            z-index: 1050; /* Di atas elemen lain */
+            z-index: 1050;
             padding-top: 20px;
             border-right: 1px solid #e2e8f0;
             overflow-y: auto;
@@ -112,12 +113,12 @@
             flex: 1;
             padding: 30px;
             transition: margin-left 0.3s ease-in-out;
-            width: 100%; /* Pastikan full width */
+            width: 100%;
         }
 
         /* --- MOBILE TOGGLE & OVERLAY --- */
         .mobile-toggle {
-            display: none; /* Hidden di desktop */
+            display: none;
             position: fixed;
             top: 15px;
             left: 15px;
@@ -143,32 +144,11 @@
 
         /* --- RESPONSIVE MEDIA QUERIES --- */
         @media (max-width: 991.98px) {
-            /* 1. Sembunyikan sidebar secara default (geser ke kiri) */
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            /* 2. Main content jadi full width */
-            .main-content {
-                margin-left: 0;
-                padding: 70px 20px 20px 20px; /* Padding top ditambah agar tidak ketutup tombol toggle */
-            }
-
-            /* 3. Tampilkan tombol toggle */
-            .mobile-toggle {
-                display: block;
-            }
-
-            /* 4. Class 'show' untuk menampilkan sidebar */
-            .sidebar.show {
-                transform: translateX(0);
-            }
-
-            /* 5. Tampilkan overlay saat sidebar terbuka */
-            .sidebar-overlay.show {
-                display: block;
-                opacity: 1;
-            }
+            .sidebar { transform: translateX(-100%); }
+            .main-content { margin-left: 0; padding: 70px 20px 20px 20px; }
+            .mobile-toggle { display: block; }
+            .sidebar.show { transform: translateX(0); }
+            .sidebar-overlay.show { display: block; opacity: 1; }
         }
     </style>
 </head>
@@ -224,8 +204,8 @@
                 <i class="bi bi-person-video2"></i> Data Dokter
             </a>
 
-            {{-- Menu Data Poli --}}
-            <a href="#" class="nav-link">
+            {{-- Menu Data Poli (UPDATED LINK) --}}
+            <a href="{{ route('admin.poli.index') }}" class="nav-link {{ request()->routeIs('admin.poli*') ? 'active' : '' }}">
                 <i class="bi bi-clipboard-pulse"></i> Data Poli
             </a>
             

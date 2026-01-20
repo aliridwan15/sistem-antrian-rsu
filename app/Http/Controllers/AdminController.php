@@ -20,17 +20,18 @@ class AdminController extends Controller
         return view('admin.dashboard', compact('polis'));
     }
 
-    // 1. READ (SORTING & FILTERING)
+    // =================================================
+    // CRUD DATA DOKTER (Sesuai kode sebelumnya)
+    // =================================================
+
     public function dokterIndex(Request $request) 
     {
         $polis = $this->getPolis(); 
         
-        // Start Query
         $query = Doctor::with(['polis' => function($q) {
             $q->orderBy('name', 'asc');
         }]);
 
-        // LOGIKA FILTER: Jika ada poli_id di URL, filter dokternya
         if ($request->has('poli_id') && $request->poli_id != '') {
             $query->whereHas('polis', function($q) use ($request) {
                 $q->where('polis.id', $request->poli_id);
@@ -39,8 +40,6 @@ class AdminController extends Controller
 
         $doctors = $query->get();
 
-        // LOGIKA SORTING TAMPILAN:
-        // Urutkan berdasarkan nama poli pertama (agar rapi secara visual)
         $doctors = $doctors->sortBy(function($doctor) {
             return $doctor->polis->first()->name ?? 'zzzz';
         })->values();
@@ -48,7 +47,6 @@ class AdminController extends Controller
         return view('admin.data-dokter', compact('polis', 'doctors'));
     }
 
-    // 2. CREATE
     public function dokterStore(Request $request) 
     {
         $request->validate([
@@ -65,9 +63,7 @@ class AdminController extends Controller
         try {
             DB::beginTransaction();
 
-            $doctor = Doctor::create([
-                'name' => $request->name,
-            ]);
+            $doctor = Doctor::create(['name' => $request->name]);
 
             foreach ($request->schedule as $item) {
                 $status = $item['status'] ?? 'Aktif';
@@ -102,7 +98,6 @@ class AdminController extends Controller
         }
     }
 
-    // 3. UPDATE
     public function dokterUpdate(Request $request, $id) 
     {
         $request->validate([
@@ -119,11 +114,7 @@ class AdminController extends Controller
             $doctor = Doctor::findOrFail($id);
             $doctor->update(['name' => $request->name]);
 
-            $existingData = DB::table('doctor_poli')
-                                ->where('doctor_id', $id)
-                                ->get()
-                                ->groupBy('poli_id'); 
-
+            $existingData = DB::table('doctor_poli')->where('doctor_id', $id)->get()->groupBy('poli_id'); 
             $processedIds = [];
 
             foreach ($request->schedule as $item) {
@@ -140,33 +131,19 @@ class AdminController extends Controller
 
                 if (isset($item['poli_id']) && is_array($item['poli_id'])) {
                     foreach ($item['poli_id'] as $poliId) {
-                        
                         $existingRecord = null;
                         if ($existingData->has($poliId) && $existingData[$poliId]->isNotEmpty()) {
                             $existingRecord = $existingData[$poliId]->shift();
                         }
 
                         if ($existingRecord) {
-                            DB::table('doctor_poli')
-                                ->where('id', $existingRecord->id)
-                                ->update([
-                                    'day'        => $day,
-                                    'time'       => $time,
-                                    'note'       => $note,
-                                    'status'     => $status,
-                                    'updated_at' => now(),
-                                ]);
+                            DB::table('doctor_poli')->where('id', $existingRecord->id)->update([
+                                'day' => $day, 'time' => $time, 'note' => $note, 'status' => $status, 'updated_at' => now(),
+                            ]);
                             $processedIds[] = $existingRecord->id;
                         } else {
                             $newId = DB::table('doctor_poli')->insertGetId([
-                                'doctor_id'  => $id,
-                                'poli_id'    => $poliId,
-                                'day'        => $day,
-                                'time'       => $time,
-                                'note'       => $note,
-                                'status'     => $status,
-                                'created_at' => now(),
-                                'updated_at' => now(),
+                                'doctor_id' => $id, 'poli_id' => $poliId, 'day' => $day, 'time' => $time, 'note' => $note, 'status' => $status, 'created_at' => now(), 'updated_at' => now(),
                             ]);
                             $processedIds[] = $newId;
                         }
@@ -188,11 +165,70 @@ class AdminController extends Controller
         }
     }
 
-    // 4. DELETE
     public function dokterDestroy($id) 
     {
         $doctor = Doctor::findOrFail($id);
         $doctor->delete();
         return redirect()->route('admin.dokter.index')->with('success', 'Data dokter berhasil dihapus.');
+    }
+
+    // =================================================
+    // CRUD DATA POLIKLINIK (BARU)
+    // =================================================
+
+    // 1. READ POLI
+    public function poliIndex()
+    {
+        $polis = $this->getPolis(); // Untuk sidebar
+        $dataPolis = Poli::orderBy('name', 'asc')->get(); // Untuk tabel
+
+        return view('admin.data-poli', compact('polis', 'dataPolis'));
+    }
+
+    // 2. CREATE POLI
+    public function poliStore(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'icon' => 'nullable|string|max:50', // Misal: bi-heart-pulse
+        ]);
+
+        Poli::create([
+            'name' => $request->name,
+            'icon' => $request->icon ?? 'bi-hospital', // Default icon
+        ]);
+
+        return redirect()->route('admin.poli.index')->with('success', 'Poliklinik berhasil ditambahkan.');
+    }
+
+    // 3. UPDATE POLI
+    public function poliUpdate(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'icon' => 'nullable|string|max:50',
+        ]);
+
+        $poli = Poli::findOrFail($id);
+        $poli->update([
+            'name' => $request->name,
+            'icon' => $request->icon,
+        ]);
+
+        return redirect()->route('admin.poli.index')->with('success', 'Data Poliklinik berhasil diperbarui.');
+    }
+
+    // 4. DELETE POLI
+    public function poliDestroy($id)
+    {
+        $poli = Poli::findOrFail($id);
+        
+        // Cek relasi agar aman (Opsional)
+        if ($poli->doctors()->count() > 0) {
+            return redirect()->back()->with('error', 'Gagal hapus! Masih ada dokter yang terdaftar di poli ini.');
+        }
+
+        $poli->delete();
+        return redirect()->route('admin.poli.index')->with('success', 'Poliklinik berhasil dihapus.');
     }
 }
