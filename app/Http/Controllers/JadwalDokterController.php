@@ -3,35 +3,52 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\DoctorPoli;
+use App\Models\Poli; // Tambahkan Model Poli
 
 class JadwalDokterController extends Controller
 {
     public function index()
     {
-        // Data Jadwal Terstruktur
+        // 1. SIAPKAN STRUKTUR ARRAY
         $jadwal = [
-            'senin' => [
-                ['poli' => 'Poli Penyakit Dalam', 'dokter' => 'dr. Ahmad Junaidi, Sp.PD', 'jam' => '08.00 - Selesai', 'icon' => 'bi-heart-pulse', 'note' => 'Membuat janji terlebih dahulu'],
-                ['poli' => 'Poli Spesialis Anak', 'dokter' => 'dr. Rina Wulandari, Sp.A', 'jam' => '10.00 - Selesai', 'icon' => 'bi-emoji-smile', 'note' => null],
-            ],
-            'selasa' => [
-                ['poli' => 'Poli Penyakit Dalam', 'dokter' => 'dr. Siti Aminah, Sp.PD', 'jam' => '13.00 - Selesai', 'icon' => 'bi-heart-pulse', 'note' => null],
-                ['poli' => 'Poli Kebidanan', 'dokter' => 'dr. Budi Santoso, Sp.OG', 'jam' => '09.00 - Selesai', 'icon' => 'bi-person-standing-dress', 'note' => 'Membuat janji terlebih dahulu'],
-            ],
-            'rabu' => [
-                ['poli' => 'Poli Mata', 'dokter' => 'dr. Maya Indriani, Sp.M', 'jam' => '10.00 - Selesai', 'icon' => 'bi-eye', 'note' => null],
-            ],
-            'kamis' => [
-                ['poli' => 'Poli Bedah', 'dokter' => 'dr. Bambang Sutrisno, Sp.B', 'jam' => '08.00 - Selesai', 'icon' => 'bi-bandaid', 'note' => null],
-            ],
-            'jumat' => [
-                ['poli' => 'Poli THT', 'dokter' => 'dr. Hendra Kurniawan, Sp.THT', 'jam' => '14.00 - Selesai', 'icon' => 'bi-ear', 'note' => null],
-            ],
-            'sabtu' => [
-                ['poli' => 'Poli Umum', 'dokter' => 'dr. Andi Wijaya', 'jam' => '08.00 - Selesai', 'icon' => 'bi-capsule', 'note' => null],
-            ],
+            'senin'  => [], 'selasa' => [], 'rabu'   => [],
+            'kamis'  => [], 'jumat'  => [], 'sabtu'  => [],
         ];
 
-        return view('jadwal-dokter', compact('jadwal'));
+        // 2. AMBIL DATA JADWAL
+        $dataDb = DoctorPoli::with(['doctor', 'poli'])
+                            ->where('status', 'Aktif')
+                            ->get();
+
+        // 3. MAPPING DATA
+        foreach ($dataDb as $row) {
+            $daysArray = explode(',', $row->day);
+            foreach ($daysArray as $dayRaw) {
+                $dayKey = strtolower(trim($dayRaw));
+                if (array_key_exists($dayKey, $jadwal)) {
+                    $jadwal[$dayKey][] = [
+                        'poli'   => $row->poli->name,
+                        'poli_id'=> $row->poli->id, // Butuh ID untuk filter JS
+                        'dokter' => $row->doctor->name,
+                        'jam'    => $row->time, 
+                        'icon'   => $row->poli->icon,
+                        'note'   => $row->note
+                    ];
+                }
+            }
+        }
+
+        // 4. SORTING JAM
+        foreach ($jadwal as $hari => &$daftarDokter) {
+            usort($daftarDokter, function ($a, $b) {
+                return strcmp($a['jam'], $b['jam']);
+            });
+        }
+
+        // 5. AMBIL LIST POLI UNTUK DROPDOWN FILTER
+        $polis = Poli::orderBy('name', 'asc')->get();
+
+        return view('jadwal-dokter', compact('jadwal', 'polis'));
     }
 }

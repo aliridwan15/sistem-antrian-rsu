@@ -11,9 +11,6 @@ class Poli extends Model
 
     protected $table = 'polis';
     
-    // --- PERBAIKAN: Menambahkan $fillable ---
-    // Laravel mewajibkan kita mendaftarkan kolom mana saja yang boleh diisi
-    // melalui fungsi create() atau update() demi keamanan.
     protected $fillable = [
         'name',
         'icon',
@@ -22,6 +19,9 @@ class Poli extends Model
     // Relasi Many-to-Many ke Doctor
     public function doctors()
     {
-        return $this->belongsToMany(Doctor::class, 'doctor_poli', 'poli_id', 'doctor_id');
+        return $this->belongsToMany(Doctor::class, 'doctor_poli', 'poli_id', 'doctor_id')
+                    // WAJIB: Tambahkan ini juga
+                    ->withPivot('day', 'time', 'note', 'status')
+                    ->withTimestamps();
     }
 }

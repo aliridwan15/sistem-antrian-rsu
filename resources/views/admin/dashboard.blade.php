@@ -4,149 +4,157 @@
 
 @section('content')
 
-    {{-- CSS Khusus Halaman Ini (Optional) --}}
+    {{-- CSS Khusus Halaman Ini --}}
     <style>
         .stat-card {
             border: none;
-            border-radius: 12px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.03);
-            transition: 0.3s;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
             background: white;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
         }
-        .stat-card:hover { transform: translateY(-5px); }
-        .icon-box {
-            width: 50px; height: 50px;
-            border-radius: 10px;
+        .stat-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .stat-icon {
+            width: 60px; height: 60px;
+            border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
         }
+        .stat-label { color: #64748b; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { font-size: 2.5rem; font-weight: 800; color: #334155; line-height: 1; }
+        
+        /* Hiasan Background */
+        .stat-card::after {
+            content: ""; position: absolute; right: -20px; top: -20px;
+            width: 100px; height: 100px; border-radius: 50%;
+            opacity: 0.1; z-index: 0;
+        }
+        .card-content { position: relative; z-index: 1; }
+        
+        /* Warna-warna */
+        .bg-blue-soft { background-color: #e0f2fe; color: #0284c7; }
+        .bg-green-soft { background-color: #dcfce7; color: #16a34a; }
+        .bg-orange-soft { background-color: #ffedd5; color: #ea580c; }
+        .bg-purple-soft { background-color: #f3e8ff; color: #9333ea; }
+        
+        .card-blue::after { background-color: #0284c7; }
+        .card-green::after { background-color: #16a34a; }
+        .card-orange::after { background-color: #ea580c; }
+        .card-purple::after { background-color: #9333ea; }
     </style>
 
     {{-- Header Atas --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
-            <h4 class="fw-bold mb-0">Dashboard Admin</h4>
-            <p class="text-muted small">Ringkasan data rumah sakit hari ini</p>
+            <h4 class="fw-bold mb-1 text-dark">Dashboard Overview</h4>
+            <p class="text-muted small mb-0">Laporan statistik antrian pasien.</p>
         </div>
-        <div class="d-flex align-items-center gap-3">
-            <span class="text-muted small">Halo, <strong>Admin</strong></span>
-            <img src="https://ui-avatars.com/api/?name=Admin&background=1B9C85&color=fff" class="rounded-circle" width="40">
+        <div class="d-flex align-items-center gap-3 bg-white px-4 py-2 rounded-pill shadow-sm">
+            <div class="text-end lh-1">
+                <span class="d-block fw-bold text-dark small">Administrator</span>
+                <span class="d-block text-muted" style="font-size: 0.7rem;">Super Admin</span>
+            </div>
+            <img src="https://ui-avatars.com/api/?name=Admin&background=1B9C85&color=fff" class="rounded-circle" width="35">
         </div>
     </div>
 
     {{-- Statistik Cards --}}
-    <div class="row g-4 mb-5">
-        {{-- Card 1 --}}
-        <div class="col-md-3">
-            <div class="card stat-card p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted small mb-1">Total Pasien</p>
-                        <h3 class="fw-bold mb-0">1,240</h3>
+    <div class="row g-4">
+        
+        {{-- Card 1: Total Pasien --}}
+        <div class="col-md-6 col-xl-3">
+            <div class="stat-card card-blue p-4">
+                <div class="card-content">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-label mb-2">Total Pasien</div>
+                            <div class="stat-value">{{ number_format($totalPasien) }}</div>
+                        </div>
+                        <div class="stat-icon bg-blue-soft">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
                     </div>
-                    <div class="icon-box bg-primary bg-opacity-10 text-primary">
-                        <i class="bi bi-people"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {{-- Card 2 --}}
-        <div class="col-md-3">
-            <div class="card stat-card p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted small mb-1">Antrian Hari Ini</p>
-                        <h3 class="fw-bold mb-0 text-success">45</h3>
-                    </div>
-                    <div class="icon-box bg-success bg-opacity-10 text-success">
-                        <i class="bi bi-ticket-perforated"></i>
+                    <div class="mt-3 text-muted small">
+                        <i class="bi bi-database me-1"></i> Keseluruhan Data
                     </div>
                 </div>
             </div>
         </div>
-        {{-- Card 3 --}}
-        <div class="col-md-3">
-            <div class="card stat-card p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted small mb-1">Dokter Tersedia</p>
-                        <h3 class="fw-bold mb-0">12</h3>
+
+        {{-- Card 2: Antrian Hari Ini --}}
+        <div class="col-md-6 col-xl-3">
+            <div class="stat-card card-green p-4">
+                <div class="card-content">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-label mb-2">Antrian Hari Ini</div>
+                            <div class="stat-value">{{ number_format($antrianHariIni) }}</div>
+                        </div>
+                        <div class="stat-icon bg-green-soft">
+                            <i class="bi bi-calendar-check-fill"></i>
+                        </div>
                     </div>
-                    <div class="icon-box bg-warning bg-opacity-10 text-warning">
-                        <i class="bi bi-person-lines-fill"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {{-- Card 4 --}}
-        <div class="col-md-3">
-            <div class="card stat-card p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <p class="text-muted small mb-1">Poli Aktif</p>
-                        <h3 class="fw-bold mb-0">15</h3>
-                    </div>
-                    <div class="icon-box bg-info bg-opacity-10 text-info">
-                        <i class="bi bi-hospital"></i>
+                    <div class="mt-3 text-success small fw-bold">
+                        <i class="bi bi-arrow-up-circle me-1"></i> {{ date('d M Y') }}
                     </div>
                 </div>
             </div>
         </div>
+
+        {{-- Card 3: Antrian Minggu Ini --}}
+        <div class="col-md-6 col-xl-3">
+            <div class="stat-card card-orange p-4">
+                <div class="card-content">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-label mb-2">Minggu Ini</div>
+                            <div class="stat-value">{{ number_format($antrianMingguIni) }}</div>
+                        </div>
+                        <div class="stat-icon bg-orange-soft">
+                            <i class="bi bi-calendar-week-fill"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-muted small">
+                        <i class="bi bi-bar-chart-line me-1"></i> Senin - Minggu
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Card 4: Antrian Bulan Ini --}}
+        <div class="col-md-6 col-xl-3">
+            <div class="stat-card card-purple p-4">
+                <div class="card-content">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-label mb-2">Bulan Ini</div>
+                            <div class="stat-value">{{ number_format($antrianBulanIni) }}</div>
+                        </div>
+                        <div class="stat-icon bg-purple-soft">
+                            <i class="bi bi-calendar-month-fill"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-muted small">
+                        <i class="bi bi-pie-chart-fill me-1"></i> Bulan {{ date('F') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    {{-- Table Antrian Terbaru --}}
-    <div class="card stat-card border-0">
-        <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
-            <h5 class="fw-bold mb-0">Antrian Terbaru Masuk</h5>
-            <button class="btn btn-sm btn-outline-success rounded-pill">Lihat Semua</button>
-        </div>
-        <div class="card-body px-4 pb-4">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>No. Antrian</th>
-                            <th>Nama Pasien</th>
-                            <th>Poli Tujuan</th>
-                            <th>Dokter</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="fw-bold">G-102</td>
-                            <td>Budi Santoso</td>
-                            <td>Poli Gigi</td>
-                            <td>drg. Nanda Putri</td>
-                            <td><span class="badge bg-warning text-dark">Menunggu</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">A-205</td>
-                            <td>Siti Aminah</td>
-                            <td>Poli Anak</td>
-                            <td>dr. Budi Santoso, Sp.A</td>
-                            <td><span class="badge bg-success">Selesai</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="fw-bold">J-008</td>
-                            <td>Ahmad Dhani</td>
-                            <td>Poli Jantung</td>
-                            <td>dr. Hartono, Sp.JP</td>
-                            <td><span class="badge bg-danger">Batal</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+    {{-- Area Kosong (Placeholder) --}}
+    <div class="row mt-5">
+        <div class="col-12 text-center text-muted py-5">
+            <img src="https://illustrations.popsy.co/gray/success.svg" alt="All Good" height="150" class="mb-3 opacity-50">
+            <p>Data antrian belum tersedia.</p>
         </div>
     </div>
 

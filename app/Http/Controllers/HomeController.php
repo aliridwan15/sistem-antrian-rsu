@@ -3,60 +3,68 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth; // PENTING: Import Facade Auth
+use App\Models\Poli;
+use App\Models\Doctor;
+use App\Models\Antrian;
+use Carbon\Carbon;
 
 class HomeController extends Controller
 {
-    // --- 1. DATA POLI LENGKAP (15 POLI) ---
-    private $polis = [
-        ['nama' => 'Poli Anak', 'icon' => 'bi-emoji-smile'],
-        ['nama' => 'Poli Kandungan', 'icon' => 'bi-gender-female'],
-        ['nama' => 'Poli Bedah', 'icon' => 'bi-scissors'],
-        ['nama' => 'Poli Penyakit Dalam', 'icon' => 'bi-clipboard-heart'],
-        ['nama' => 'Poli Paru', 'icon' => 'bi-lungs'],
-        ['nama' => 'Poli Jantung', 'icon' => 'bi-heart-pulse'],
-        ['nama' => 'Poli Syaraf', 'icon' => 'bi-diagram-3'],
-        ['nama' => 'Poli THT', 'icon' => 'bi-ear'],
-        ['nama' => 'Poli Kulit & Kelamin', 'icon' => 'bi-droplet'],
-        ['nama' => 'Poli Orthopedi', 'icon' => 'bi-person-wheelchair'],
-        ['nama' => 'Poli Urologi', 'icon' => 'bi-gender-male'],
-        ['nama' => 'Poli Gigi', 'icon' => 'bi-emoji-grin'],
-        ['nama' => 'Poli Mata', 'icon' => 'bi-eye'],
-        ['nama' => 'Poli Tumbuh Kembang', 'icon' => 'bi-graph-up'],
-        ['nama' => 'Subspesialis Ginjal & Hipertensi', 'icon' => 'bi-droplet-half'],
-    ];
-
-    // --- 2. DATA DOKTER (DUMMY) ---
-    private $doctors = [
-        'Poli Anak'             => ['dr. Budi Santoso, Sp.A', 'dr. Rina Suryani, Sp.A'],
-        'Poli Kandungan'        => ['dr. Dewi Sartika, Sp.OG', 'dr. Andi Wijaya, Sp.OG'],
-        'Poli Bedah'            => ['dr. Bambang Pamungkas, Sp.B', 'dr. Eko Kurniawan, Sp.B'],
-        'Poli Penyakit Dalam'   => ['dr. Cahyo Utomo, Sp.PD', 'dr. Siti Aminah, Sp.PD'],
-        'Poli Paru'             => ['dr. Paru Spesialis 1', 'dr. Paru Spesialis 2'],
-        'Poli Jantung'          => ['dr. Hartono, Sp.JP'],
-        'Poli Syaraf'           => ['dr. Neuro, Sp.N'],
-        'Poli THT'              => ['dr. Telinga, Sp.THT'],
-        'Poli Kulit & Kelamin'  => ['dr. Skin Care, Sp.KK'],
-        'Poli Orthopedi'        => ['dr. Tulang, Sp.OT'],
-        'Poli Urologi'          => ['dr. Ginjal, Sp.U'],
-        'Poli Gigi'             => ['drg. Nanda Putri', 'drg. Oky Pratama'],
-        'Poli Mata'             => ['dr. Purnomo, Sp.M'],
-        'Poli Tumbuh Kembang'   => ['dr. Anak Tumbuh, Sp.A(K)'],
-        'Subspesialis Ginjal & Hipertensi' => ['dr. Hipertensi, Sp.PD-KGH'],
-        'Lainnya'               => ['Dokter Spesialis Standby']
-    ];
-
     public function index()
     {
-        $polis = $this->polis;
-        $doctors = $this->doctors;
+        // 1. Ambil Data Poli
+        $polisDb = Poli::orderBy('name', 'asc')->get();
+        $polis = [];
+        foreach ($polisDb as $p) {
+            $polis[] = ['nama' => $p->name, 'icon' => $p->icon];
+        }
+
+        // 2. Ambil Dokter
+        $doctors = [];
+        $polisWithDoctors = Poli::with(['doctors' => function($q) {
+            $q->select('doctors.id', 'doctors.name')->wherePivot('status', 'Aktif'); 
+        }])->get();
+
+        foreach ($polisWithDoctors as $p) {
+            $docNames = $p->doctors->pluck('name')->unique()->values()->toArray();
+            if (!empty($docNames)) $doctors[$p->name] = $docNames;
+        }
+        if (empty($doctors)) $doctors['Lainnya'] = ['Tidak ada dokter tersedia'];
+
         return view('home', compact('polis', 'doctors'));
+    }
+
+    public function showTicket()
+    {
+        // 1. Pastikan User Login
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu.');
+        }
+
+        $userId = Auth::id();
+
+        // 2. LOGIC BARU: Ambil SEMUA antrian milik user ini hari ini
+        // Syarat: User ID sama, Tanggal Hari Ini, Status Menunggu
+        $antrians = Antrian::where('user_id', $userId)
+                            ->whereDate('created_at', Carbon::today())
+                            ->where('status', 'Menunggu')
+                            ->orderBy('created_at', 'desc') // Yang terbaru di atas
+                            ->get();
+
+        // 3. Validasi jika tidak ada antrian
+        if ($antrians->isEmpty()) {
+            return redirect()->route('home')->with('error', 'Anda tidak memiliki tiket antrian aktif hari ini.');
+        }
+
+        // Kirim Collection ($antrians) ke view, bukan array tunggal
+        return view('ticket', compact('antrians'));
     }
 
     public function storeAntrian(Request $request)
     {
-        // 1. Validasi
         $request->validate([
-            'nik'           => 'required|numeric|min_digits:10',
+            'nik'           => 'required|numeric',
             'nama_pasien'   => 'required|string|max:255',
             'tanggal_lahir' => 'required',
             'jenis_kelamin' => 'required',
@@ -67,42 +75,56 @@ class HomeController extends Controller
             'tanggal_kontrol'=> 'required',
         ]);
 
-        // 2. GENERATE KODE ANTRIAN (Logic Huruf Depan Lengkap)
         $namaPoli = $request->poli;
-        $kodeHuruf = 'U'; // Default Umum
-
-        // Logic penentuan huruf kode
+        $kodeHuruf = 'U';
         if (str_contains($namaPoli, 'Gigi')) $kodeHuruf = 'G';
         elseif (str_contains($namaPoli, 'Anak')) $kodeHuruf = 'A';
         elseif (str_contains($namaPoli, 'Kandungan')) $kodeHuruf = 'K';
         elseif (str_contains($namaPoli, 'Bedah')) $kodeHuruf = 'B';
-        elseif (str_contains($namaPoli, 'Dalam')) $kodeHuruf = 'D'; // Penyakit Dalam
         elseif (str_contains($namaPoli, 'Jantung')) $kodeHuruf = 'J';
         elseif (str_contains($namaPoli, 'Mata')) $kodeHuruf = 'M';
         elseif (str_contains($namaPoli, 'THT')) $kodeHuruf = 'T';
         elseif (str_contains($namaPoli, 'Syaraf')) $kodeHuruf = 'S';
         elseif (str_contains($namaPoli, 'Paru')) $kodeHuruf = 'P';
-        elseif (str_contains($namaPoli, 'Kulit')) $kodeHuruf = 'L'; // L untuk Kulit (biar beda sama Kandungan K)
+        elseif (str_contains($namaPoli, 'Kulit')) $kodeHuruf = 'L';
         elseif (str_contains($namaPoli, 'Orthopedi')) $kodeHuruf = 'O';
-        elseif (str_contains($namaPoli, 'Urologi')) $kodeHuruf = 'U';
-        elseif (str_contains($namaPoli, 'Ginjal')) $kodeHuruf = 'H'; // H untuk Hipertensi/Ginjal
         
-        // Generate angka random 3 digit
-        $kodeFinal = $kodeHuruf . '-' . rand(100, 999);
+        $jumlahHariIni = Antrian::whereDate('created_at', Carbon::today())
+                                ->where('no_antrian', 'LIKE', $kodeHuruf . '%')
+                                ->count();
+        
+        $urutan = $jumlahHariIni + 1;
+        $kodeFinal = $kodeHuruf . '-' . sprintf("%03d", $urutan);
 
-        // 3. SIAPKAN DATA
-        $dataTiket = [
+        try {
+            $tglLahir = Carbon::createFromFormat('d-m-Y', $request->tanggal_lahir)->format('Y-m-d');
+        } catch (\Exception $e) { $tglLahir = date('Y-m-d'); }
+
+        try {
+            $rawTgl = $request->tanggal_kontrol;
+            if (str_contains($rawTgl, ',')) {
+                $parts = explode(',', $rawTgl);
+                $rawTgl = trim(end($parts)); 
+            }
+            $tglKontrol = Carbon::createFromFormat('d-m-Y', $rawTgl)->format('Y-m-d');
+        } catch (\Exception $e) { $tglKontrol = date('Y-m-d'); }
+
+        // Simpan ke Database dengan User ID
+        Antrian::create([
+            'user_id'       => Auth::id(), // <--- PENTING: Kaitkan dengan User Login
             'no_antrian'    => $kodeFinal,
+            'nik'           => $request->nik,
             'nama_pasien'   => $request->nama_pasien,
+            'tanggal_lahir' => $tglLahir,
+            'jenis_kelamin' => $request->jenis_kelamin,
+            'nomor_hp'      => $request->nomor_hp,
+            'alamat'        => $request->alamat,
             'poli'          => $request->poli,
             'dokter'        => $request->dokter,
-            'tgl_kontrol'   => $request->tanggal_kontrol,
-            'estimasi_jam'  => '08:00 - 10:00 WIB'
-        ];
+            'tanggal_kontrol'=> $tglKontrol,
+            'status'        => 'Menunggu',
+        ]);
 
-        // 4. KEMBALIKAN KE VIEW
-        return back()
-            ->with('success', 'Pendaftaran Berhasil! Silakan cek tiket Anda.')
-            ->with('antrian_baru', $dataTiket); 
+        return redirect()->route('tiket.show')->with('success', 'Pendaftaran Berhasil!');
     }
 }

@@ -38,25 +38,37 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::middleware('auth')->group(function () {
 
     // === USER / PASIEN ===
+    
+    // 1. Proses Ambil Antrian (POST)
     Route::post('/ambil-antrian', [HomeController::class, 'storeAntrian'])->name('antrian.store');
 
+    // 2. [BARU] Halaman Lihat Tiket (GET)
+    Route::get('/tiket-antrian', [HomeController::class, 'showTicket'])->name('tiket.show');
+
+
     // === ADMIN ===
-    Route::prefix('admin')->name('admin.')->group(function () {
+    Route::prefix('admin')
+        ->name('admin.')
+        ->middleware('role:admin') // Pastikan middleware role sudah dibuat
+        ->group(function () {
         
-        // Dashboard
-        Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
+            // Dashboard
+            Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
 
-        // --- CRUD DATA DOKTER ---
-        Route::get('/data-dokter', [AdminController::class, 'dokterIndex'])->name('dokter.index');
-        Route::post('/data-dokter', [AdminController::class, 'dokterStore'])->name('dokter.store');
-        Route::put('/data-dokter/{id}', [AdminController::class, 'dokterUpdate'])->name('dokter.update');
-        Route::delete('/data-dokter/{id}', [AdminController::class, 'dokterDestroy'])->name('dokter.destroy');
+            // Antrian Masuk
+            Route::get('/antrian-masuk', [AdminController::class, 'antrianIndex'])->name('antrian.index');
 
-        // --- CRUD DATA POLI (BARU) ---
-        Route::get('/data-poli', [AdminController::class, 'poliIndex'])->name('poli.index');
-        Route::post('/data-poli', [AdminController::class, 'poliStore'])->name('poli.store');
-        Route::put('/data-poli/{id}', [AdminController::class, 'poliUpdate'])->name('poli.update');
-        Route::delete('/data-poli/{id}', [AdminController::class, 'poliDestroy'])->name('poli.destroy');
+            // --- CRUD DOKTER ---
+            Route::get('/data-dokter', [AdminController::class, 'dokterIndex'])->name('dokter.index');
+            Route::post('/data-dokter', [AdminController::class, 'dokterStore'])->name('dokter.store');
+            Route::put('/data-dokter/{id}', [AdminController::class, 'dokterUpdate'])->name('dokter.update');
+            Route::delete('/data-dokter/{id}', [AdminController::class, 'dokterDestroy'])->name('dokter.destroy');
+
+            // --- CRUD POLI ---
+            Route::get('/data-poli', [AdminController::class, 'poliIndex'])->name('poli.index');
+            Route::post('/data-poli', [AdminController::class, 'poliStore'])->name('poli.store');
+            Route::put('/data-poli/{id}', [AdminController::class, 'poliUpdate'])->name('poli.update');
+            Route::delete('/data-poli/{id}', [AdminController::class, 'poliDestroy'])->name('poli.destroy');
     });
 
 });

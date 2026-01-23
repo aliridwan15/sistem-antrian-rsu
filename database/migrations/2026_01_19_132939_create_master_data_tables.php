@@ -9,19 +9,23 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Tabel Polis
-        Schema::create('polis', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('icon', 50)->nullable()->default('bi-hospital');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('polis')) {
+            Schema::create('polis', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('icon', 50)->nullable()->default('bi-hospital');
+                $table->timestamps();
+            });
+        }
 
         // 2. Tabel Doctors
-        Schema::create('doctors', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('doctors')) {
+            Schema::create('doctors', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void
