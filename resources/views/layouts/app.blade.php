@@ -12,31 +12,63 @@
         body { font-family: 'Segoe UI', sans-serif; margin:0; padding:0; background-color: #f5f5f5; display: flex; flex-direction: column; min-height: 100vh; }
 
         /* --- GLOBAL BUTTON --- */
-        .btn-rs { background-color: #1B9C85; color: white; border-radius: 30px; padding: 10px 30px; transition: 0.3s; border: none; }
+        .btn-rs { background-color: #1B9C85; color: white; border-radius: 30px; padding: 8px 25px; transition: 0.3s; border: none; white-space: nowrap; }
         .btn-rs:hover { background-color: #14806c; color: white; }
 
-        /* --- NAVBAR STYLES --- */
-        .navbar-logo { height: 50px; }
+        /* --- NAVBAR STYLES (UPDATED) --- */
+        .navbar { padding: 10px 0; }
+        .navbar-logo { height: 45px; margin-right: 15px; }
 
-        .nav-link { font-weight: 500; color: #333; margin-right: 15px; position: relative; }
-        .nav-link:hover { color: #1B9C85; }
-        .nav-link::after {
+        /* Menu Navigasi Utama */
+        .navbar-nav .nav-link { 
+            font-weight: 500; color: #333; margin-right: 15px; position: relative; white-space: nowrap; 
+        }
+        .navbar-nav .nav-link:hover, .navbar-nav .nav-link.active { color: #1B9C85; }
+        
+        /* Garis Bawah Animasi */
+        .navbar-nav .nav-link::after {
             content: ''; position: absolute; width: 0; height: 2px; bottom: 5px; left: 0;
             background-color: #1B9C85; transition: width 0.3s ease-in-out;
         }
-        /* Active Link Style */
-        .nav-link.active { color: #1B9C85; }
-        .nav-link.active::after { width: 100%; }
+        .navbar-nav .nav-link:hover::after, .navbar-nav .nav-link.active::after { width: 100%; }
+
+        /* --- LAYOUT RESPONSIVE TANPA HAMBURGER --- */
+        /* Kita paksa navbar-collapse selalu tampil (display: flex) dan row-nya nowrap */
+        .navbar-expand-lg .navbar-collapse {
+            display: flex !important;
+            flex-basis: auto;
+        }
         
-        .nav-link:hover::after { width: 100%; }
+        .navbar-nav {
+            flex-direction: row; /* Selalu horizontal */
+            align-items: center;
+            flex-wrap: nowrap; /* Jangan turun ke bawah */
+        }
+
+        /* Container Scrollable untuk layar sangat kecil agar tidak pecah */
+        .nav-scroller-wrapper {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            overflow-x: auto; /* Scroll samping jika sempit */
+            scrollbar-width: none; /* Hide scrollbar Firefox */
+            -ms-overflow-style: none;  /* Hide scrollbar IE */
+            padding-right: 10px; /* Jarak aman */
+        }
+        .nav-scroller-wrapper::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome */
 
         /* --- USER DROPDOWN STYLE --- */
-        .user-dropdown-link { color: #1B9C85 !important; padding: 8px 15px; border-radius: 30px; transition: all 0.3s ease; }
-        .user-dropdown-link:hover, .user-dropdown-link[aria-expanded="true"] { background-color: #e0f2ef; color: #14806c !important; }
-        .user-dropdown-link[aria-expanded="true"] .bi-chevron-down { transform: rotate(180deg); transition: transform 0.3s; }
-        .bi-chevron-down { transition: transform 0.3s; }
-        .dropdown-item:active { background-color: #1B9C85; color: white; }
-        .dropdown-menu { border-radius: 12px; }
+        .user-dropdown-link { 
+            color: #1B9C85 !important; padding: 6px 12px; border-radius: 30px; 
+            transition: all 0.3s ease; white-space: nowrap; display: flex; align-items: center;
+        }
+        .user-dropdown-link:hover, .user-dropdown-link[aria-expanded="true"] { 
+            background-color: #e0f2ef; color: #14806c !important; 
+        }
+        .user-dropdown-link[aria-expanded="true"] .bi-chevron-down { transform: rotate(180deg); }
+        .bi-chevron-down { transition: transform 0.3s; font-size: 0.7rem; margin-left: 5px; }
+        
+        .dropdown-menu { border-radius: 12px; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-top: 10px; }
         .dropdown-toggle::after { content: none; }
 
         /* --- HERO SECTION --- */
@@ -45,14 +77,13 @@
         .hero .container, .hero .container-fluid { position: relative; z-index: 2; }
 
         /* --- CONTACT & SOCIAL ICONS --- */
-        .contact-wrapper { display: flex; align-items: center; gap: 8px; }
+        .contact-wrapper { display: flex; align-items: center; gap: 8px; margin-left: 15px; border-left: 1px solid #ddd; padding-left: 15px; }
         .contact-text-wrapper { text-align: right; font-size: 0.85rem; line-height: 1.2; margin-right: 5px; }
         .contact-number { color: #212529; text-decoration: none; transition: color 0.3s ease; }
         .contact-number:hover { color: #1B9C85; }
-        .social-link { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.3s ease; text-decoration: none; }
+        .social-link { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.3s ease; text-decoration: none; }
         .social-link:hover { background-color: #e0f2ef; }
-        .social-link i { font-size: 1.5rem; color: #1B9C85; transition: transform 0.3s; }
-        .social-link:hover i { transform: scale(1.15); }
+        .social-link i { font-size: 1.2rem; color: #1B9C85; }
 
         /* --- POLI CARD HOVER --- */
         .poli-card { transition: all 0.3s ease; cursor: pointer; background-color: white; }
@@ -66,69 +97,75 @@
         footer { background-color: white; padding-top: 3rem; padding-bottom: 1.5rem; margin-top: auto; border-top: 1px solid #e9ecef; }
         .footer-link { color: #1B9C85; text-decoration: none; font-weight: 600; transition: 0.3s; }
         .footer-link:hover { color: #14806c; text-decoration: underline; }
+
+        /* Hide elements on mobile to save space */
+        @media (max-width: 991px) {
+            .contact-text-wrapper, .social-link { display: none; } /* Hide kontak & sosmed di mobile */
+            .contact-wrapper { border: none; padding: 0; margin: 0; }
+            .navbar-logo { height: 35px; margin-right: 10px; } /* Logo lebih kecil */
+        }
     </style>
 </head>
 <body>
 
     <nav class="navbar navbar-expand-lg bg-white shadow-sm fixed-top">
-        <div class="container">
-            <a class="navbar-brand" href="{{ route('home') }}">
+        <div class="container-fluid px-3 px-lg-5"> <a class="navbar-brand d-flex align-items-center" href="{{ route('home') }}">
                 <img src="{{ asset('images/logors.png') }}" alt="Logo" class="navbar-logo"> 
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav ms-auto align-items-center mt-3 mt-lg-0">
-                    <li class="nav-item"><a class="nav-link" href="{{ route('home') }}">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('jadwal.dokter') }}">Jadwal Dokter</a></li>
 
-                    {{-- MENU BARU: ANTRIAN SAYA --}}
+            <div class="nav-scroller-wrapper">
+                <ul class="navbar-nav me-auto mb-0"> <li class="nav-item"><a class="nav-link" href="{{ route('home') }}">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('jadwal.dokter') }}">Jadwal Dokter</a></li>
+                    
                     @auth
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('tiket.show') }}">Antrian Saya</a>
                         </li>
                     @endauth
-
-                    @auth
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle fw-bold d-flex align-items-center user-dropdown-link" 
-                               href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-person-circle me-2 fs-5"></i> 
-                                {{ Auth::user()->name }}
-                                <i class="bi bi-chevron-down ms-2" style="font-size: 0.75rem; stroke-width: 2;"></i>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="userDropdown">
-                                <li>
-                                    <form action="{{ route('logout') }}" method="POST">
-                                        @csrf
-                                        <button type="submit" class="dropdown-item text-danger d-flex align-items-center">
-                                            <i class="bi bi-box-arrow-right me-2"></i> Keluar
-                                        </button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </li>
-                    @else
-                        <li class="nav-item"><a class="btn btn-rs" href="{{ route('login') }}">Login</a></li>
-                    @endauth
-
-                    <li class="nav-item ms-lg-3 mt-3 mt-lg-0">
-                        <div class="contact-wrapper">
-                            <div class="contact-text-wrapper d-none d-lg-block">
-                                <span>Hubungi Kami:</span><br>
-                                <a href="tel:03199303942" class="fw-bold contact-number">031 99303942</a>
-                            </div>
-                            <a href="https://wa.me/6282278888001" target="_blank" class="social-link" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
-                            <a href="https://www.instagram.com/annamedikamadura" target="_blank" class="social-link" title="Instagram"><i class="bi bi-instagram"></i></a>
-                        </div>
-                    </li>
                 </ul>
             </div>
+
+            <ul class="navbar-nav ms-auto mb-0 align-items-center">
+                
+                @auth
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle fw-bold user-dropdown-link" 
+                           href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle me-1 fs-5"></i> 
+                            <span class="d-none d-sm-inline">{{ Auth::user()->name }}</span> <i class="bi bi-chevron-down"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="userDropdown">
+                            <li>
+                                <form action="{{ route('logout') }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item text-danger d-flex align-items-center">
+                                        <i class="bi bi-box-arrow-right me-2"></i> Keluar
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                @else
+                    <li class="nav-item"><a class="btn btn-rs" href="{{ route('login') }}">Login</a></li>
+                @endauth
+
+                <li class="nav-item d-none d-lg-block">
+                    <div class="contact-wrapper">
+                        <div class="contact-text-wrapper">
+                            <span class="text-muted small">Hubungi Kami:</span><br>
+                            <a href="tel:03199303942" class="fw-bold contact-number">031 99303942</a>
+                        </div>
+                        <a href="https://wa.me/6282278888001" target="_blank" class="social-link" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+                        <a href="https://www.instagram.com/annamedikamadura" target="_blank" class="social-link" title="Instagram"><i class="bi bi-instagram"></i></a>
+                    </div>
+                </li>
+
+            </ul>
+
         </div>
     </nav>
 
-    <main style="padding-top: 70px;">
+    <main style="padding-top: 80px;">
         @yield('content')
     </main>
 

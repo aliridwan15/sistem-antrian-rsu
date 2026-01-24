@@ -19,13 +19,27 @@
         .sidebar-brand img { max-width: 100%; height: auto; max-height: 60px; object-fit: contain; }
         
         /* NAV LINKS */
-        .nav-link { color: #64748b; font-weight: 500; padding: 12px 25px; display: flex; align-items: center; transition: all 0.2s ease-in-out; margin: 4px 15px; border-radius: 8px; text-decoration: none; }
+        .nav-link { color: #64748b; font-weight: 500; padding: 12px 25px; display: flex; align-items: center; transition: all 0.2s ease-in-out; margin: 4px 15px; border-radius: 8px; text-decoration: none; position: relative; }
         .nav-link i { font-size: 1.25rem; margin-right: 12px; color: #94a3b8; transition: 0.2s; }
         .nav-link:hover { color: var(--rs-green); background-color: #f1fbf9; }
         .nav-link.active { color: var(--rs-green); background-color: var(--rs-green-light); font-weight: 600; }
         .nav-link:hover i, .nav-link.active i { color: var(--rs-green); }
-        .submenu-link { padding-left: 3.5rem !important; font-size: 0.9rem; color: #64748b; margin: 2px 15px; }
+        .submenu-link { padding-left: 3.5rem !important; font-size: 0.9rem; color: #64748b; margin: 2px 15px; display: flex; justify-content: space-between; align-items: center;}
         .submenu-link:hover { color: var(--rs-green); background-color: transparent; transform: translateX(5px); }
+
+        /* BADGE NOTIFICATION STYLE */
+        .badge-notification {
+            background-color: #dc3545; /* Merah Bootstrap */
+            color: white;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 50%;
+            margin-left: auto; /* Dorong ke kanan */
+            min-width: 20px;
+            text-align: center;
+            font-weight: bold;
+            line-height: 1.2;
+        }
 
         /* CONTENT */
         .main-content { margin-left: var(--sidebar-width); flex: 1; padding: 30px; transition: margin-left 0.3s ease-in-out; width: 100%; }
@@ -60,16 +74,40 @@
                 <i class="bi bi-grid-fill"></i> Dashboard
             </a>
 
-            {{-- Antrian Masuk (Dropdown) --}}
-            <a href="#submenuPoli" data-bs-toggle="collapse" class="nav-link collapsed d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center"><i class="bi bi-calendar-check-fill"></i> Antrian Masuk</div>
-                <i class="bi bi-chevron-down small" style="font-size: 0.8rem;"></i>
+            {{-- Antrian Masuk (Dropdown dengan Badge) --}}
+            <a href="#submenuPoli" data-bs-toggle="collapse" class="nav-link collapsed d-flex align-items-center">
+                <i class="bi bi-calendar-check-fill"></i> 
+                <span>Antrian Masuk</span>
+                
+                {{-- BADGE GLOBAL --}}
+                @if(isset($globalTotalAntrian) && $globalTotalAntrian > 0)
+                    <span class="badge-notification">{{ $globalTotalAntrian }}</span>
+                @endif
+
+                <i class="bi bi-chevron-down small ms-2" style="font-size: 0.8rem;"></i>
             </a>
+            
             <div class="collapse {{ request()->is('admin/antrian*') ? 'show' : '' }}" id="submenuPoli">
                 <div class="py-1">
-                    @if(isset($polis) && $polis->count() > 0)
-                        @foreach($polis as $p)
-                            <a href="#" class="nav-link submenu-link">{{ $p->name }}</a>
+                    <a href="{{ route('admin.antrian.index') }}" class="nav-link submenu-link">
+                        Semua Poli
+                        @if(isset($globalTotalAntrian) && $globalTotalAntrian > 0)
+                            <span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;">{{ $globalTotalAntrian }}</span>
+                        @endif
+                    </a>
+
+                    @if(isset($sidebarPolis) && $sidebarPolis->count() > 0)
+                        @foreach($sidebarPolis as $p)
+                            @php
+                                // Ambil jumlah antrian per poli dari data yang dishare di AppServiceProvider
+                                $count = isset($antrianPerPoli[$p->name]) ? $antrianPerPoli[$p->name] : 0;
+                            @endphp
+                            <a href="{{ route('admin.antrian.index', ['poli' => $p->name]) }}" class="nav-link submenu-link">
+                                {{ $p->name }}
+                                @if($count > 0)
+                                    <span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;">{{ $count }}</span>
+                                @endif
+                            </a>
                         @endforeach
                     @else
                         <span class="text-muted small ps-5 d-block py-2">Data Poli tidak ada</span>
@@ -87,8 +125,8 @@
                 <i class="bi bi-clipboard-pulse"></i> Data Poli
             </a>
 
-            {{-- MENU BARU: Laporan --}}
-            <a href="#" class="nav-link {{ request()->routeIs('admin.laporan*') ? 'active' : '' }}">
+            {{-- Laporan --}}
+            <a href="{{ route('admin.laporan.index') }}" class="nav-link {{ request()->routeIs('admin.laporan*') ? 'active' : '' }}">
                 <i class="bi bi-file-earmark-bar-graph"></i> Laporan
             </a>
             

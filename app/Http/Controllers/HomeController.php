@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // PENTING: Import Facade Auth
+use Illuminate\Support\Facades\Auth;
 use App\Models\Poli;
 use App\Models\Doctor;
 use App\Models\Antrian;
@@ -13,51 +13,83 @@ class HomeController extends Controller
 {
     public function index()
     {
-        // 1. Ambil Data Poli
         $polisDb = Poli::orderBy('name', 'asc')->get();
         $polis = [];
         foreach ($polisDb as $p) {
             $polis[] = ['nama' => $p->name, 'icon' => $p->icon];
         }
 
-        // 2. Ambil Dokter
+        // Mapping Hari ke Angka Javascript
+        $dayMap = [
+            'Minggu' => 0, 'Senin' => 1, 'Selasa' => 2, 'Rabu' => 3, 
+            'Kamis' => 4, 'Jumat' => 5, 'Sabtu' => 6
+        ];
+
         $doctors = [];
+        
         $polisWithDoctors = Poli::with(['doctors' => function($q) {
-            $q->select('doctors.id', 'doctors.name')->wherePivot('status', 'Aktif'); 
+            $q->select('doctors.id', 'doctors.name')
+              ->wherePivot('status', 'Aktif'); // Pastikan Status Aktif
         }])->get();
 
         foreach ($polisWithDoctors as $p) {
-            $docNames = $p->doctors->pluck('name')->unique()->values()->toArray();
-            if (!empty($docNames)) $doctors[$p->name] = $docNames;
+            $docData = [];
+            foreach ($p->doctors as $doc) {
+                // --- PERBAIKAN DI SINI ---
+                // Ambil string hari dari DB, misal: "Senin, Selasa, Rabu"
+                $rawDaysString = $doc->pivot->day; 
+                
+                // Pecah string berdasarkan koma menjadi array
+                $daysArray = explode(',', $rawDaysString);
+
+                foreach ($daysArray as $singleDay) {
+                    // Bersihkan spasi dan format text (misal: " Selasa" -> "Selasa")
+                    $hariBersih = ucfirst(strtolower(trim($singleDay)));
+
+                    // Cek apakah hari ada di mapping
+                    if (isset($dayMap[$hariBersih])) {
+                        $dayIndex = $dayMap[$hariBersih];
+                        
+                        // Masukkan ke array jadwal dokter
+                        // Gunakan key dokter name agar jika ada multiple row tetap tergabung
+                        $docData[$doc->name][] = $dayIndex;
+                    }
+                }
+            }
+            
+            // Hapus duplikat hari (jika ada input dobel di db) dan urutkan
+            foreach($docData as $name => $days) {
+                $uniqueDays = array_unique($days);
+                sort($uniqueDays);
+                $docData[$name] = $uniqueDays;
+            }
+
+            if (!empty($docData)) {
+                $doctors[$p->name] = $docData;
+            }
         }
-        if (empty($doctors)) $doctors['Lainnya'] = ['Tidak ada dokter tersedia'];
+
+        if (empty($doctors)) {
+             $doctors['Lainnya'] = [];
+        }
 
         return view('home', compact('polis', 'doctors'));
     }
 
     public function showTicket()
     {
-        // 1. Pastikan User Login
         if (!Auth::check()) {
-            return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu.');
+            return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu untuk melihat tiket.');
         }
 
         $userId = Auth::id();
 
-        // 2. LOGIC BARU: Ambil SEMUA antrian milik user ini hari ini
-        // Syarat: User ID sama, Tanggal Hari Ini, Status Menunggu
         $antrians = Antrian::where('user_id', $userId)
-                            ->whereDate('created_at', Carbon::today())
-                            ->where('status', 'Menunggu')
-                            ->orderBy('created_at', 'desc') // Yang terbaru di atas
+                            ->whereIn('status', ['Menunggu', 'Dipanggil'])
+                            ->whereDate('tanggal_kontrol', '>=', Carbon::today()) 
+                            ->orderBy('tanggal_kontrol', 'asc')
                             ->get();
 
-        // 3. Validasi jika tidak ada antrian
-        if ($antrians->isEmpty()) {
-            return redirect()->route('home')->with('error', 'Anda tidak memiliki tiket antrian aktif hari ini.');
-        }
-
-        // Kirim Collection ($antrians) ke view, bukan array tunggal
         return view('ticket', compact('antrians'));
     }
 
@@ -75,31 +107,6 @@ class HomeController extends Controller
             'tanggal_kontrol'=> 'required',
         ]);
 
-        $namaPoli = $request->poli;
-        $kodeHuruf = 'U';
-        if (str_contains($namaPoli, 'Gigi')) $kodeHuruf = 'G';
-        elseif (str_contains($namaPoli, 'Anak')) $kodeHuruf = 'A';
-        elseif (str_contains($namaPoli, 'Kandungan')) $kodeHuruf = 'K';
-        elseif (str_contains($namaPoli, 'Bedah')) $kodeHuruf = 'B';
-        elseif (str_contains($namaPoli, 'Jantung')) $kodeHuruf = 'J';
-        elseif (str_contains($namaPoli, 'Mata')) $kodeHuruf = 'M';
-        elseif (str_contains($namaPoli, 'THT')) $kodeHuruf = 'T';
-        elseif (str_contains($namaPoli, 'Syaraf')) $kodeHuruf = 'S';
-        elseif (str_contains($namaPoli, 'Paru')) $kodeHuruf = 'P';
-        elseif (str_contains($namaPoli, 'Kulit')) $kodeHuruf = 'L';
-        elseif (str_contains($namaPoli, 'Orthopedi')) $kodeHuruf = 'O';
-        
-        $jumlahHariIni = Antrian::whereDate('created_at', Carbon::today())
-                                ->where('no_antrian', 'LIKE', $kodeHuruf . '%')
-                                ->count();
-        
-        $urutan = $jumlahHariIni + 1;
-        $kodeFinal = $kodeHuruf . '-' . sprintf("%03d", $urutan);
-
-        try {
-            $tglLahir = Carbon::createFromFormat('d-m-Y', $request->tanggal_lahir)->format('Y-m-d');
-        } catch (\Exception $e) { $tglLahir = date('Y-m-d'); }
-
         try {
             $rawTgl = $request->tanggal_kontrol;
             if (str_contains($rawTgl, ',')) {
@@ -107,11 +114,28 @@ class HomeController extends Controller
                 $rawTgl = trim(end($parts)); 
             }
             $tglKontrol = Carbon::createFromFormat('d-m-Y', $rawTgl)->format('Y-m-d');
-        } catch (\Exception $e) { $tglKontrol = date('Y-m-d'); }
+        } catch (\Exception $e) { 
+            $tglKontrol = date('Y-m-d'); 
+        }
 
-        // Simpan ke Database dengan User ID
+        $poliDb = Poli::where('name', $request->poli)->first();
+        $kodeHuruf = $poliDb ? $poliDb->kode : 'U';
+        
+        $jumlahAntrian = Antrian::whereDate('tanggal_kontrol', $tglKontrol)
+                                ->where('no_antrian', 'LIKE', $kodeHuruf . '%')
+                                ->count();
+        
+        $urutan = $jumlahAntrian + 1;
+        $kodeFinal = $kodeHuruf . '-' . sprintf("%03d", $urutan);
+
+        try {
+            $tglLahir = Carbon::createFromFormat('d-m-Y', $request->tanggal_lahir)->format('Y-m-d');
+        } catch (\Exception $e) { 
+            $tglLahir = date('Y-m-d'); 
+        }
+
         Antrian::create([
-            'user_id'       => Auth::id(), // <--- PENTING: Kaitkan dengan User Login
+            'user_id'       => Auth::id(),
             'no_antrian'    => $kodeFinal,
             'nik'           => $request->nik,
             'nama_pasien'   => $request->nama_pasien,
@@ -125,6 +149,15 @@ class HomeController extends Controller
             'status'        => 'Menunggu',
         ]);
 
-        return redirect()->route('tiket.show')->with('success', 'Pendaftaran Berhasil!');
+        return redirect()->route('tiket.show')->with('success', 'Pendaftaran Berhasil! Silakan cek tiket antrian Anda.');
+    }
+
+    public function destroy($id)
+    {
+        $antrian = Antrian::where('id', $id)
+                          ->where('user_id', Auth::id())
+                          ->firstOrFail();
+        $antrian->delete();
+        return back()->with('success', 'Tiket antrian berhasil dibatalkan.');
     }
 }

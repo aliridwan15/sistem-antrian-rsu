@@ -42,21 +42,25 @@ Route::middleware('auth')->group(function () {
     // 1. Proses Ambil Antrian (POST)
     Route::post('/ambil-antrian', [HomeController::class, 'storeAntrian'])->name('antrian.store');
 
-    // 2. [BARU] Halaman Lihat Tiket (GET)
+    // 2. Halaman Lihat Tiket (GET)
     Route::get('/tiket-antrian', [HomeController::class, 'showTicket'])->name('tiket.show');
+
+    // 3. Hapus/Batalkan Antrian (DELETE)
+    Route::delete('/tiket-antrian/{id}', [HomeController::class, 'destroy'])->name('antrian.destroy');
 
 
     // === ADMIN ===
     Route::prefix('admin')
         ->name('admin.')
-        ->middleware('role:admin') // Pastikan middleware role sudah dibuat
+        // ->middleware('role:admin') 
         ->group(function () {
         
             // Dashboard
             Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
 
-            // Antrian Masuk
+            // --- ANTRIAN MASUK ---
             Route::get('/antrian-masuk', [AdminController::class, 'antrianIndex'])->name('antrian.index');
+            Route::post('/antrian/update-status/{id}', [AdminController::class, 'updateStatusAntrian'])->name('antrian.updateStatus');
 
             // --- CRUD DOKTER ---
             Route::get('/data-dokter', [AdminController::class, 'dokterIndex'])->name('dokter.index');
@@ -69,6 +73,9 @@ Route::middleware('auth')->group(function () {
             Route::post('/data-poli', [AdminController::class, 'poliStore'])->name('poli.store');
             Route::put('/data-poli/{id}', [AdminController::class, 'poliUpdate'])->name('poli.update');
             Route::delete('/data-poli/{id}', [AdminController::class, 'poliDestroy'])->name('poli.destroy');
+
+            // --- MENU LAPORAN (BARU) ---
+            Route::get('/laporan', [AdminController::class, 'laporanIndex'])->name('laporan.index');
     });
 
 });

@@ -13,6 +13,7 @@ class Poli extends Model
     
     protected $fillable = [
         'name',
+        'kode', // <--- TAMBAHKAN INI
         'icon',
     ];
 
@@ -20,7 +21,6 @@ class Poli extends Model
     public function doctors()
     {
         return $this->belongsToMany(Doctor::class, 'doctor_poli', 'poli_id', 'doctor_id')
-                    // WAJIB: Tambahkan ini juga
                     ->withPivot('day', 'time', 'note', 'status')
                     ->withTimestamps();
     }

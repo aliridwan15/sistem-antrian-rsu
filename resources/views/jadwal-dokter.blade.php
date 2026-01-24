@@ -42,15 +42,14 @@
         transform: translateY(-2px); box-shadow: 0 4px 10px rgba(27, 156, 133, 0.3);
     }
 
-    /* --- Style Dropdown Filter (Posisi Tengah, Teks Kiri) --- */
+    /* --- Style Dropdown Filter --- */
     .filter-wrapper {
-        margin-top: 25px; /* Jarak dari tombol hari */
-        min-width: 300px; /* Lebar minimum */
+        margin-top: 25px; min-width: 300px;
     }
 
     .form-select-poli {
         border-radius: 50px; 
-        padding: 10px 40px 10px 20px; /* Padding kanan lebih besar untuk panah */
+        padding: 10px 40px 10px 20px;
         font-size: 0.95rem;           
         border: 2px solid #1B9C85;
         box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
@@ -59,12 +58,11 @@
         background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%231B9C85' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
         background-size: 14px;
         cursor: pointer;
-        /* UPDATE: Teks Rata Kiri */
         text-align: left; 
     }
     .form-select-poli:focus { border-color: #14806c; box-shadow: 0 0 0 0.2rem rgba(27, 156, 133, 0.25); }
 
-    /* ... (Style Card & List Dokter Tetap Sama) ... */
+    /* Card & List Dokter */
     .card-jadwal {
         background: white; border-radius: 12px; padding: 0; margin-bottom: 20px;
         box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-left: 5px solid #1B9C85;
@@ -114,12 +112,14 @@
             @endforeach
         </div>
 
-        {{-- 3. DROPDOWN FILTER (Posisi Bawah Tombol Hari, Posisi Center, Teks Left) --}}
+        {{-- 3. DROPDOWN FILTER (Otomatis terpilih jika ada parameter) --}}
         <div class="filter-wrapper">
             <select id="filterPoli" class="form-select form-select-poli" onchange="applyFilter()">
                 <option value="all">Tampilkan Semua Poliklinik</option>
                 @foreach($polis as $p)
-                    <option value="{{ $p->name }}">{{ $p->name }}</option>
+                    <option value="{{ $p->name }}" {{ isset($selectedPoli) && $selectedPoli == $p->name ? 'selected' : '' }}>
+                        {{ $p->name }}
+                    </option>
                 @endforeach
             </select>
         </div>
@@ -195,6 +195,11 @@
 </section>
 
 <script>
+    // Jalankan filter otomatis saat halaman dimuat jika ada poli yang dipilih
+    document.addEventListener("DOMContentLoaded", function() {
+        applyFilter();
+    });
+
     // 1. FILTER HARI (TAB)
     function filterHari(hariId, element) {
         const contents = document.querySelectorAll('.day-content');

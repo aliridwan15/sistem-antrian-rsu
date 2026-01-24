@@ -13,8 +13,14 @@
     
     /* Styling Row Jadwal di Tabel Utama */
     .table-hover tbody tr:hover { background-color: #f8fcfb; }
-    .schedule-row { border-bottom: 1px solid #f0f0f0; padding: 10px 0; }
-    .schedule-row:last-child { border-bottom: none; }
+    
+    /* Garis pemisah antar POLI dalam satu dokter */
+    .poli-separator { border-bottom: 1px solid #e0e0e0; }
+    .poli-separator:last-child { border-bottom: none; }
+
+    /* Garis pemisah antar JADWAL dalam satu poli */
+    .schedule-item { border-bottom: 1px dashed #e0e0e0; padding: 6px 0; }
+    .schedule-item:last-child { border-bottom: none; }
     
     /* Styling Form Modal */
     .poli-row { background-color: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 15px; position: relative; }
@@ -87,51 +93,65 @@
                     <tbody>
                         @forelse($doctors as $index => $doctor)
                             <tr>
-                                {{-- NO URUT: Gunakan $loop->iteration agar urut 1, 2, 3 meski data disortir di controller --}}
                                 <td class="ps-4 text-muted fw-semibold text-center">{{ $loop->iteration }}</td>
+                                
+                                {{-- NAMA DOKTER --}}
                                 <td><span class="fw-bold text-dark fs-6">{{ $doctor->name }}</span></td>
                                 
-                                {{-- KOLOM POLI & JADWAL (Menggunakan Grid Row agar Sejajar) --}}
-                                <td colspan="2" class="p-0">
+                                {{-- KOLOM POLI & JADWAL (GROUPED) --}}
+                                <td colspan="2" class="p-0 align-top">
                                     @if($doctor->polis->isNotEmpty())
                                         <div class="container-fluid p-0">
-                                            @foreach($doctor->polis as $p)
-                                                <div class="row m-0 schedule-row {{ $p->pivot->status == 'OFF' ? 'bg-light text-muted' : '' }}">
-                                                    
-                                                    {{-- KOLOM KIRI: POLIKLINIK --}}
-                                                    <div class="col-5 border-end d-flex align-items-center">
+                                            @php
+                                                // Grouping by Poli Name to avoid duplicate Poli rows
+                                                $groupedPolis = $doctor->polis->groupBy('name'); 
+                                            @endphp
+
+                                            @foreach($groupedPolis as $poliName => $schedules)
+                                                @php 
+                                                    // Ambil data poli pertama untuk icon & status umum
+                                                    $firstPoli = $schedules->first(); 
+                                                @endphp
+                                                
+                                                <div class="row m-0 poli-separator py-2">
+                                                    {{-- KOLOM KIRI: NAMA POLI (Hanya Muncul Sekali) --}}
+                                                    <div class="col-5 border-end d-flex align-items-center"> {{-- Hapus bg-white disini --}}
                                                         <span class="fw-bold text-success small">
-                                                            <i class="bi {{ $p->icon ?? 'bi-hospital' }} me-1"></i> {{ $p->name }}
+                                                            <i class="bi {{ $firstPoli->icon ?? 'bi-hospital' }} me-1"></i> {{ $poliName }}
                                                         </span>
-                                                        @if($p->pivot->status == 'OFF')
-                                                            <span class="badge bg-danger ms-2" style="font-size: 0.6rem;">OFF</span>
-                                                        @endif
                                                     </div>
 
-                                                    {{-- KOLOM KANAN: JADWAL --}}
-                                                    <div class="col-7">
-                                                        @if($p->pivot->status == 'OFF')
-                                                            <small class="text-danger fst-italic">Sedang Tidak Praktek / Cuti</small>
-                                                        @else
-                                                            <div class="small text-dark">
-                                                                <strong>{{ $p->pivot->day }}</strong> : {{ $p->pivot->time }}
+                                                    {{-- KOLOM KANAN: LIST JADWAL (Looping Jadwal) --}}
+                                                    <div class="col-7"> {{-- Hapus bg-white disini --}}
+                                                        @foreach($schedules as $schedule)
+                                                            <div class="schedule-item">
+                                                                @if($schedule->pivot->status == 'OFF')
+                                                                    <small class="text-danger fst-italic fw-bold" style="font-size: 0.75rem;">
+                                                                        <span class="badge bg-danger me-1">OFF</span> Sedang Tidak Praktek
+                                                                    </small>
+                                                                @else
+                                                                    <div class="small text-dark d-flex align-items-center">
+                                                                        <strong class="me-1" style="min-width: 45px;">{{ $schedule->pivot->day }}</strong> : {{ $schedule->pivot->time }}
+                                                                    </div>
+                                                                    @if($schedule->pivot->note)
+                                                                        <div class="text-muted fst-italic ms-1" style="font-size: 0.7rem;">
+                                                                            <i class="bi bi-arrow-return-right me-1"></i> {{ $schedule->pivot->note }}
+                                                                        </div>
+                                                                    @endif
+                                                                @endif
                                                             </div>
-                                                            @if($p->pivot->note)
-                                                                <div class="text-muted fst-italic" style="font-size: 0.75rem;">
-                                                                    <i class="bi bi-info-circle me-1"></i> {{ $p->pivot->note }}
-                                                                </div>
-                                                            @endif
-                                                        @endif
+                                                        @endforeach
                                                     </div>
                                                 </div>
                                             @endforeach
                                         </div>
                                     @else
-                                        <div class="p-3 text-muted small fst-italic text-center">- Belum ada data -</div>
+                                        <div class="p-3 text-muted small fst-italic text-center">- Belum ada data jadwal -</div>
                                     @endif
                                 </td>
 
-                                <td class="text-center">
+                                {{-- AKSI --}}
+                                <td class="text-center align-middle">
                                     <button class="btn btn-sm btn-outline-warning rounded-pill me-1" onclick='openEditModal(@json($doctor))'>
                                         <i class="bi bi-pencil-square"></i>
                                     </button>

@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\DoctorPoli;
-use App\Models\Poli; // Tambahkan Model Poli
+use App\Models\Poli;
 
 class JadwalDokterController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         // 1. SIAPKAN STRUKTUR ARRAY
         $jadwal = [
@@ -29,7 +29,7 @@ class JadwalDokterController extends Controller
                 if (array_key_exists($dayKey, $jadwal)) {
                     $jadwal[$dayKey][] = [
                         'poli'   => $row->poli->name,
-                        'poli_id'=> $row->poli->id, // Butuh ID untuk filter JS
+                        'poli_id'=> $row->poli->id,
                         'dokter' => $row->doctor->name,
                         'jam'    => $row->time, 
                         'icon'   => $row->poli->icon,
@@ -49,6 +49,9 @@ class JadwalDokterController extends Controller
         // 5. AMBIL LIST POLI UNTUK DROPDOWN FILTER
         $polis = Poli::orderBy('name', 'asc')->get();
 
-        return view('jadwal-dokter', compact('jadwal', 'polis'));
+        // 6. AMBIL SELECTED POLI DARI URL
+        $selectedPoli = $request->input('poli');
+
+        return view('jadwal-dokter', compact('jadwal', 'polis', 'selectedPoli'));
     }
 }

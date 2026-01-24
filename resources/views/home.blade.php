@@ -20,6 +20,38 @@
     .input-group-text, .bg-white-force { background-color: white !important; cursor: pointer; }
     .input-group-text { border-left: 0; } .bg-white-force { border-right: 0; }
     .alert-pengantar { background-color: #f8fffe; border: 1px solid #cbf0ea; border-left: 5px solid var(--rs-green); }
+
+    /* Custom Style untuk Hari Minggu Merah & Disabled */
+    .sunday-red { color: #dc3545 !important; font-weight: bold; }
+    .-disabled-.sunday-red { color: #f8d7da !important; }
+
+    /* Style Link Jadwal Dokter (Hover Effect) */
+    .link-jadwal { color: var(--rs-green); text-decoration: none; transition: all 0.2s ease-in-out; }
+    .link-jadwal:hover { color: #14806c; text-decoration: underline; }
+
+    /* --- STYLE BARU: HOVER POLI HIJAU PUTIH --- */
+    .poli-link { text-decoration: none; color: inherit; display: block; }
+    
+    .poli-card {
+        transition: all 0.3s ease; /* Transisi halus */
+        background-color: white;
+        border: 1px solid #e0e0e0;
+    }
+
+    /* Saat Hover: Background Hijau, Card Naik sedikit */
+    .poli-link:hover .poli-card { 
+        background-color: var(--rs-green) !important; 
+        border-color: var(--rs-green) !important;
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(27, 156, 133, 0.4) !important;
+    }
+
+    /* Saat Hover: Icon dan Teks jadi Putih */
+    .poli-link:hover .poli-card i,
+    .poli-link:hover .poli-card p {
+        color: white !important;
+        transition: color 0.3s ease;
+    }
 </style>
 
 {{-- HERO SECTION --}}
@@ -61,9 +93,16 @@
         <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-4">
             @foreach($polis as $poli)
                 <div class="col">
-                    <div class="card poli-card text-center h-100 shadow-sm border-0">
-                        <div class="card-body py-4"><i class="bi {{ $poli['icon'] }} fs-1 mb-3 d-block" style="color: #1B9C85;"></i><p class="mb-0 fw-semibold small">{{ $poli['nama'] }}</p></div>
-                    </div>
+                    {{-- Link ke Jadwal Dokter --}}
+                    <a href="{{ route('jadwal.dokter', ['poli' => $poli['nama']]) }}" class="poli-link">
+                        <div class="card poli-card text-center h-100 shadow-sm">
+                            <div class="card-body py-4">
+                                {{-- Icon Default Hijau --}}
+                                <i class="bi {{ $poli['icon'] }} fs-1 mb-3 d-block" style="color: #1B9C85;"></i>
+                                <p class="mb-0 fw-semibold small">{{ $poli['nama'] }}</p>
+                            </div>
+                        </div>
+                    </a>
                 </div>
             @endforeach
         </div>
@@ -84,12 +123,24 @@
                     @if ($errors->any())
                         <div class="alert alert-danger mb-4"><ul class="mb-0 small">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
                     @endif
+                    
+                    {{-- ALERT SELAMAT DATANG --}}
                     <div class="alert alert-pengantar mb-4 shadow-sm">
-                        <div class="d-flex">
+                        <div class="d-flex align-items-start">
                             <div class="fs-3 me-3 text-success"><i class="bi bi-info-circle-fill"></i></div>
-                            <div><h6 class="fw-bold mb-1 text-dark">Selamat Datang</h6><p class="mb-0 small text-secondary">Isi formulir dengan data valid.</p></div>
+                            <div>
+                                <h6 class="fw-bold mb-1 text-dark">Selamat Datang</h6>
+                                <p class="mb-0 small text-secondary">
+                                    Silakan isi formulir dengan data valid. 
+                                    <br>
+                                    <a href="{{ route('jadwal.dokter') }}" class="fw-bold link-jadwal">
+                                        <i class="bi bi-calendar-week me-1"></i>Cek Jadwal Dokter Terlebih Dahulu
+                                    </a>
+                                </p>
+                            </div>
                         </div>
                     </div>
+
                     <div class="row g-3">
                         <div class="col-md-12"><label class="form-label fw-semibold text-secondary">NIK</label><input type="number" name="nik" value="{{ old('nik') }}" class="form-control rounded-3" required></div>
                         <div class="col-md-12"><label class="form-label fw-semibold text-secondary">Nama Lengkap</label><input type="text" name="nama_pasien" value="{{ old('nama_pasien') }}" class="form-control rounded-3" required></div>
@@ -97,7 +148,11 @@
                             <div class="input-group"><input type="text" id="input-lahir" name="tanggal_lahir" value="{{ old('tanggal_lahir') }}" class="form-control rounded-start-3 bg-white-force" readonly required><span class="input-group-text rounded-end-3 text-success" id="btn-lahir"><i class="bi bi-calendar-event"></i></span></div>
                         </div>
                         <div class="col-md-6"><label class="form-label fw-semibold text-secondary">Jenis Kelamin</label>
-                            <select name="jenis_kelamin" class="form-select rounded-3" required><option value="" selected disabled>Pilih</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select>
+                            <select name="jenis_kelamin" class="form-select rounded-3" required>
+                                <option value="" selected disabled>Pilih Jenis Kelamin</option>
+                                <option value="Laki-laki">Laki-laki</option>
+                                <option value="Perempuan">Perempuan</option>
+                            </select>
                         </div>
                         <div class="col-md-6"><label class="form-label fw-semibold text-secondary">No HP / WA</label><input type="number" name="nomor_hp" value="{{ old('nomor_hp') }}" class="form-control rounded-3" required></div>
                         <div class="col-md-6"><label class="form-label fw-semibold text-secondary">Poli Tujuan</label>
@@ -108,7 +163,10 @@
                         </div>
                         <div class="col-md-12"><label class="form-label fw-semibold text-secondary">Alamat</label><textarea name="alamat" class="form-control rounded-3" rows="2" required>{{ old('alamat') }}</textarea></div>
                         <div class="col-md-12 mt-4"><label class="form-label fw-semibold text-secondary">Tgl Rencana Kontrol</label>
-                            <div class="input-group"><input type="text" id="input-kontrol" name="tanggal_kontrol" value="{{ old('tanggal_kontrol') }}" class="form-control rounded-start-3 bg-white-force" readonly required><span class="input-group-text rounded-end-3 text-success" id="btn-kontrol"><i class="bi bi-calendar-check"></i></span></div>
+                            <div class="input-group">
+                                <input type="text" id="input-kontrol" name="tanggal_kontrol" value="{{ old('tanggal_kontrol') }}" class="form-control rounded-start-3 bg-white-force" readonly required disabled placeholder="Pilih Dokter terlebih dahulu">
+                                <span class="input-group-text rounded-end-3 text-success" id="btn-kontrol"><i class="bi bi-calendar-check"></i></span>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -130,25 +188,9 @@
         const dataDokter = @json($doctors);
         const selectPoli = document.getElementById('select-poli');
         const selectDokter = document.getElementById('select-dokter');
+        const inputKontrol = document.getElementById('input-kontrol');
+        let availableDays = [];
 
-        selectPoli.addEventListener('change', function() {
-            const poli = this.value;
-            const list = dataDokter[poli] || dataDokter['Lainnya'] || [];
-            selectDokter.innerHTML = '<option value="" selected disabled>-- Pilih Dokter --</option>';
-            
-            if (list.length > 0) {
-                selectDokter.disabled = false;
-                list.forEach(nm => {
-                    const opt = document.createElement('option'); opt.value = nm; opt.textContent = nm;
-                    selectDokter.appendChild(opt);
-                });
-            } else {
-                selectDokter.disabled = true;
-                selectDokter.innerHTML = '<option value="" selected disabled>Tidak tersedia</option>';
-            }
-        });
-
-        // Config Datepicker
         const localeID = {
             days: ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
             daysShort: ['Min','Sen','Sel','Rab','Kam','Jum','Sab'],
@@ -158,16 +200,53 @@
             today: 'Hari Ini', clear: 'Hapus', dateFormat: 'dd-MM-yyyy', timeFormat: 'HH:mm', firstDay: 1
         };
         const todayBtn = { content: 'Hari Ini', className: 'air-datepicker-button', onClick: (dp) => { let d = new Date(); dp.selectDate(d); dp.setViewDate(d); dp.hide(); } };
+        const dpCommonOpt = { locale: localeID, autoClose: true, buttons: [todayBtn, 'clear'], isMobile: false };
         
-        const dpOpt = { locale: localeID, autoClose: true, buttons: [todayBtn, 'clear'], isMobile: false };
-        const dpLahir = new AirDatepicker('#input-lahir', { ...dpOpt, maxDate: new Date(), position: 'bottom left' });
-        const dpKontrol = new AirDatepicker('#input-kontrol', { ...dpOpt, minDate: new Date(), dateFormat: 'EEEE, dd-MM-yyyy', position: 'top left' });
+        const dpLahir = new AirDatepicker('#input-lahir', { ...dpCommonOpt, maxDate: new Date(), position: 'bottom left' });
+        const dpKontrol = new AirDatepicker('#input-kontrol', { 
+            ...dpCommonOpt, minDate: new Date(), dateFormat: 'EEEE, dd-MM-yyyy', position: 'top left',
+            onRenderCell: function({date, cellType}) {
+                if (cellType === 'day') {
+                    const day = date.getDay(); 
+                    if (day === 0) return { disabled: true, classes: 'sunday-red' };
+                    if (availableDays.length > 0 && !availableDays.includes(day)) return { disabled: true };
+                }
+            }
+        });
 
-        const showDp = (e, dp) => { e.stopPropagation(); e.preventDefault(); dp.show(); };
-        document.getElementById('input-lahir').onmousedown = (e) => showDp(e, dpLahir);
-        document.getElementById('btn-lahir').onmousedown = (e) => showDp(e, dpLahir);
-        document.getElementById('input-kontrol').onmousedown = (e) => showDp(e, dpKontrol);
-        document.getElementById('btn-kontrol').onmousedown = (e) => showDp(e, dpKontrol);
+        selectPoli.addEventListener('change', function() {
+            const poli = this.value;
+            const listDokterData = dataDokter[poli] || {};
+            selectDokter.innerHTML = '<option value="" selected disabled>-- Pilih Dokter --</option>';
+            selectDokter.disabled = true;
+            inputKontrol.value = ''; inputKontrol.disabled = true; inputKontrol.placeholder = 'Pilih Dokter terlebih dahulu';
+            availableDays = [];
+
+            const namaDokter = Object.keys(listDokterData);
+            if (namaDokter.length > 0) {
+                selectDokter.disabled = false;
+                namaDokter.forEach(nm => {
+                    const opt = document.createElement('option'); opt.value = nm; opt.textContent = nm;
+                    selectDokter.appendChild(opt);
+                });
+            } else {
+                selectDokter.innerHTML = '<option value="" selected disabled>Tidak tersedia</option>';
+            }
+        });
+
+        selectDokter.addEventListener('change', function() {
+            const poli = selectPoli.value;
+            const dokter = this.value;
+            if (dataDokter[poli] && dataDokter[poli][dokter]) {
+                availableDays = dataDokter[poli][dokter];
+                inputKontrol.disabled = false; inputKontrol.placeholder = 'Pilih Tanggal';
+                dpKontrol.clear(); 
+            }
+        });
+
+        const showDp = (dp) => { dp.show(); };
+        document.getElementById('btn-lahir').onclick = () => showDp(dpLahir);
+        document.getElementById('btn-kontrol').onclick = () => { if(!inputKontrol.disabled) showDp(dpKontrol); };
     });
 </script>
 @endsection
