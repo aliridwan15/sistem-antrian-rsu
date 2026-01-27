@@ -16,24 +16,41 @@ class AdminController extends Controller
         return Poli::orderBy('name', 'asc')->get();
     }
 
+    // --- DASHBOARD ADMIN (UPDATED) ---
     public function index()
     {
         $polis = $this->getPolis();
 
-        $totalPasien      = Antrian::count();
-        $antrianHariIni   = Antrian::whereDate('created_at', Carbon::today())->count();
+        // Status yang dianggap valid untuk statistik (Batal tidak dihitung)
+        $validStatuses = ['Menunggu', 'Dipanggil', 'Selesai'];
+
+        // 1. Total Pasien (Semua Data Valid)
+        $totalPasien = Antrian::whereIn('status', $validStatuses)->count();
+
+        // 2. Antrian Hari Ini (Berdasarkan TANGGAL KONTROL)
+        $antrianHariIni = Antrian::whereDate('tanggal_kontrol', Carbon::today())
+                                 ->whereIn('status', $validStatuses)
+                                 ->count();
         
-        $antrianMingguIni = Antrian::whereBetween('created_at', [
+        // 3. Antrian Minggu Ini
+        $antrianMingguIni = Antrian::whereBetween('tanggal_kontrol', [
             Carbon::now()->startOfWeek(), 
             Carbon::now()->endOfWeek()
-        ])->count();
+        ])->whereIn('status', $validStatuses)->count();
         
-        $antrianBulanIni  = Antrian::whereMonth('created_at', Carbon::now()->month)
-                                   ->whereYear('created_at', Carbon::now()->year)
+        // 4. Antrian Bulan Ini
+        $antrianBulanIni  = Antrian::whereMonth('tanggal_kontrol', Carbon::now()->month)
+                                   ->whereYear('tanggal_kontrol', Carbon::now()->year)
+                                   ->whereIn('status', $validStatuses)
                                    ->count();
 
+        // 5. Ambil 5 Antrian Terbaru Masuk (Berdasarkan waktu daftar)
+        // Ini untuk ditampilkan di tabel bawah dashboard
+        $latestAntrians = Antrian::orderBy('created_at', 'desc')->take(5)->get();
+
         return view('admin.dashboard', compact(
-            'polis', 'totalPasien', 'antrianHariIni', 'antrianMingguIni', 'antrianBulanIni'
+            'polis', 'totalPasien', 'antrianHariIni', 'antrianMingguIni', 'antrianBulanIni',
+            'latestAntrians' 
         ));
     }
 
@@ -46,7 +63,7 @@ class AdminController extends Controller
         $selectedDate   = $request->input('date');
 
         if ($isDateFiltered) {
-            // Mode History: Tampilkan semua status pada tanggal tertentu
+            // Mode Filter: Tampilkan semua status pada tanggal tertentu
             $query->whereDate('tanggal_kontrol', $selectedDate);
         } else {
             // Mode Default: Tampilkan antrian aktif (Hari Ini & Masa Depan)
@@ -68,13 +85,16 @@ class AdminController extends Controller
         return view('admin.antrian-masuk', compact('antrians', 'polis', 'selectedDate', 'isDateFiltered'));
     }
 
+    // --- UPDATE STATUS ANTRIAN ---
     public function updateStatusAntrian(Request $request, $id)
     {
         $antrian = Antrian::findOrFail($id);
         $status = $request->status; 
+
         $antrian->update(['status' => $status]);
-        
+
         $pesan = $status == 'Dipanggil' ? 'Pasien sedang dipanggil.' : 'Pemeriksaan selesai.';
+
         return back()->with('success', $pesan);
     }
 
@@ -206,18 +226,12 @@ class AdminController extends Controller
         return redirect()->route('admin.poli.index')->with('success', 'Poliklinik berhasil dihapus.');
     }
 
-    // --- MENU LAPORAN (BARU) ---
+    // --- MENU LAPORAN ---
     public function laporanIndex(Request $request)
     {
-        // 1. Filter Default: Bulan & Tahun ini
         $bulan = $request->input('bulan', date('m'));
         $tahun = $request->input('tahun', date('Y'));
 
-        // 2. Query Data Laporan
-        // Kriteria:
-        // - Status 'Selesai' atau 'Batal'
-        // - ATAU Status 'Menunggu'/'Dipanggil' TAPI tanggal kontrol < Hari Ini (Kadaluarsa/Terlewat)
-        
         $laporans = Antrian::whereMonth('tanggal_kontrol', $bulan)
             ->whereYear('tanggal_kontrol', $tahun)
             ->where(function($q) {

@@ -79,7 +79,7 @@
                 <i class="bi bi-calendar-check-fill"></i> 
                 <span>Antrian Masuk</span>
                 
-                {{-- BADGE GLOBAL --}}
+                {{-- BADGE GLOBAL (Mengambil dari AppServiceProvider) --}}
                 @if(isset($globalTotalAntrian) && $globalTotalAntrian > 0)
                     <span class="badge-notification">{{ $globalTotalAntrian }}</span>
                 @endif
@@ -99,8 +99,8 @@
                     @if(isset($sidebarPolis) && $sidebarPolis->count() > 0)
                         @foreach($sidebarPolis as $p)
                             @php
-                                // Ambil jumlah antrian per poli dari data yang dishare di AppServiceProvider
-                                $count = isset($antrianPerPoli[$p->name]) ? $antrianPerPoli[$p->name] : 0;
+                                // Ambil jumlah antrian per poli dari array yang dishare AppServiceProvider
+                                $count = $antrianPerPoli[$p->name] ?? 0;
                             @endphp
                             <a href="{{ route('admin.antrian.index', ['poli' => $p->name]) }}" class="nav-link submenu-link">
                                 {{ $p->name }}

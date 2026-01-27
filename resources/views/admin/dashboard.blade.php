@@ -6,6 +6,7 @@
 
     {{-- CSS Khusus Halaman Ini --}}
     <style>
+        /* --- STYLE STAT CARD --- */
         .stat-card {
             border: none;
             border-radius: 16px;
@@ -30,7 +31,6 @@
         .stat-label { color: #64748b; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
         .stat-value { font-size: 2.5rem; font-weight: 800; color: #334155; line-height: 1; }
         
-        /* Hiasan Background */
         .stat-card::after {
             content: ""; position: absolute; right: -20px; top: -20px;
             width: 100px; height: 100px; border-radius: 50%;
@@ -38,7 +38,6 @@
         }
         .card-content { position: relative; z-index: 1; }
         
-        /* Warna-warna */
         .bg-blue-soft { background-color: #e0f2fe; color: #0284c7; }
         .bg-green-soft { background-color: #dcfce7; color: #16a34a; }
         .bg-orange-soft { background-color: #ffedd5; color: #ea580c; }
@@ -48,13 +47,43 @@
         .card-green::after { background-color: #16a34a; }
         .card-orange::after { background-color: #ea580c; }
         .card-purple::after { background-color: #9333ea; }
+
+        /* --- STYLE BARU: BACKGROUND IMAGE AREA --- */
+        .dashboard-hero {
+            background-image: url("{{ asset('images/rsanna.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border-radius: 20px;
+            min-height: 300px; /* Sedikit dikecilkan agar proporsional di atas */
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .dashboard-hero::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.85);
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
     </style>
 
     {{-- Header Atas --}}
-    <div class="d-flex justify-content-between align-items-center mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="fw-bold mb-1 text-dark">Dashboard Overview</h4>
-            <p class="text-muted small mb-0">Laporan statistik antrian pasien.</p>
+            <p class="text-muted small mb-0">Selamat datang kembali di panel admin.</p>
         </div>
         <div class="d-flex align-items-center gap-3 bg-white px-4 py-2 rounded-pill shadow-sm">
             <div class="text-end lh-1">
@@ -65,7 +94,20 @@
         </div>
     </div>
 
-    {{-- Statistik Cards --}}
+    {{-- 1. AREA BACKGROUND IMAGE (HERO) --}}
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="dashboard-hero">
+                <div class="hero-content">
+                    <img src="{{ asset('images/logors.png') }}" alt="Logo" style="height: 80px; width: auto; margin-bottom: 20px; opacity: 0.9;">
+                    <h3 class="fw-bold text-dark" style="letter-spacing: 1px;">RSU ANNA MEDIKA MADURA</h3>
+                    <p class="text-muted mb-0">Sistem Informasi Manajemen Antrian Pasien</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- 2. STATISTIK CARDS --}}
     <div class="row g-4">
         
         {{-- Card 1: Total Pasien --}}
@@ -148,14 +190,6 @@
             </div>
         </div>
 
-    </div>
-
-    {{-- Area Kosong (Placeholder) --}}
-    <div class="row mt-5">
-        <div class="col-12 text-center text-muted py-5">
-            <img src="https://illustrations.popsy.co/gray/success.svg" alt="All Good" height="150" class="mb-3 opacity-50">
-            <p>Data antrian belum tersedia.</p>
-        </div>
     </div>
 
 @endsection

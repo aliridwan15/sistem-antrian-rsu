@@ -5,8 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use App\Models\Poli;
-use App\Models\Antrian; // Import Model Antrian
-use Carbon\Carbon;      // Import Carbon untuk tanggal
+use App\Models\Antrian;
+use Carbon\Carbon;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,33 +23,35 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // View Composer untuk Layout Admin
-        // Data ini akan SELALU ADA di semua halaman yang extend 'layouts.admin'
+        // View Composer untuk Layout Admin ('layouts.admin')
+        // Data di bawah ini akan otomatis dikirim setiap kali layout admin dimuat.
         View::composer('layouts.admin', function ($view) {
             
-            // 1. Ambil Daftar Poli untuk Sidebar Dropdown
+            // 1. Ambil Daftar Poli untuk Sidebar
             $sidebarPolis = Poli::orderBy('name', 'asc')->get();
 
-            // 2. Hitung Total Antrian 'Menunggu' Hari Ini (Untuk Badge Utama)
-            $globalTotalAntrian = Antrian::whereDate('created_at', Carbon::today())
-                                         ->where('status', 'Menunggu')
-                                         ->count();
+            // 2. Query Dasar untuk Antrian "Aktif" (Hari Ini & Masa Depan)
+            // Kriteria: Tanggal Kontrol >= Hari Ini DAN Status = (Menunggu atau Dipanggil)
+            // PERBAIKAN: Menggunakan '>=' agar antrian besok juga terhitung
+            $antrianAktifQuery = Antrian::whereDate('tanggal_kontrol', '>=', Carbon::today())
+                                        ->whereIn('status', ['Menunggu', 'Dipanggil']);
 
-            // 3. Hitung Antrian Per Poli (Untuk Badge di dalam Dropdown)
-            // Hasilnya array: ['Poli Mata' => 5, 'Poli Gigi' => 2, ...]
-            $antrianPerPoli = Antrian::whereDate('created_at', Carbon::today())
-                                     ->where('status', 'Menunggu')
-                                     ->selectRaw('poli, count(*) as total')
-                                     ->groupBy('poli')
-                                     ->pluck('total', 'poli');
+            // 3. Hitung Total Global (Untuk Badge Utama di menu "Antrian Masuk")
+            // Gunakan clone agar query tidak berubah untuk perhitungan berikutnya
+            $globalTotalAntrian = (clone $antrianAktifQuery)->count();
 
-            // Kirim variabel ke view
-            $view->with('sidebarPolis', $sidebarPolis);
-            $view->with('globalTotalAntrian', $globalTotalAntrian);
-            $view->with('antrianPerPoli', $antrianPerPoli);
-            
-            // Tetap kirim $polis biasa untuk kompatibilitas code lama jika ada
-            $view->with('polis', $sidebarPolis);
+            // 4. Hitung Antrian Per Poli (Untuk Badge di dalam Dropdown Poli)
+            // Hasilnya array: ['Poli Umum' => 5, 'Poli Gigi' => 2, ...]
+            $antrianPerPoli = (clone $antrianAktifQuery)
+                                ->selectRaw('poli, count(*) as total')
+                                ->groupBy('poli')
+                                ->pluck('total', 'poli')
+                                ->toArray();
+
+            // 5. Kirim variabel ke View
+            $view->with('sidebarPolis', $sidebarPolis)
+                 ->with('globalTotalAntrian', $globalTotalAntrian)
+                 ->with('antrianPerPoli', $antrianPerPoli);
         });
     }
 }

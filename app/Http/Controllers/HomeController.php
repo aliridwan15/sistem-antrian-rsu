@@ -29,35 +29,24 @@ class HomeController extends Controller
         
         $polisWithDoctors = Poli::with(['doctors' => function($q) {
             $q->select('doctors.id', 'doctors.name')
-              ->wherePivot('status', 'Aktif'); // Pastikan Status Aktif
+              ->wherePivot('status', 'Aktif'); 
         }])->get();
 
         foreach ($polisWithDoctors as $p) {
             $docData = [];
             foreach ($p->doctors as $doc) {
-                // --- PERBAIKAN DI SINI ---
-                // Ambil string hari dari DB, misal: "Senin, Selasa, Rabu"
                 $rawDaysString = $doc->pivot->day; 
-                
-                // Pecah string berdasarkan koma menjadi array
                 $daysArray = explode(',', $rawDaysString);
 
                 foreach ($daysArray as $singleDay) {
-                    // Bersihkan spasi dan format text (misal: " Selasa" -> "Selasa")
                     $hariBersih = ucfirst(strtolower(trim($singleDay)));
-
-                    // Cek apakah hari ada di mapping
                     if (isset($dayMap[$hariBersih])) {
                         $dayIndex = $dayMap[$hariBersih];
-                        
-                        // Masukkan ke array jadwal dokter
-                        // Gunakan key dokter name agar jika ada multiple row tetap tergabung
                         $docData[$doc->name][] = $dayIndex;
                     }
                 }
             }
             
-            // Hapus duplikat hari (jika ada input dobel di db) dan urutkan
             foreach($docData as $name => $days) {
                 $uniqueDays = array_unique($days);
                 sort($uniqueDays);
@@ -93,6 +82,7 @@ class HomeController extends Controller
         return view('ticket', compact('antrians'));
     }
 
+    // --- LOGIKA RESET PER HARI ADA DI SINI ---
     public function storeAntrian(Request $request)
     {
         $request->validate([
@@ -107,6 +97,7 @@ class HomeController extends Controller
             'tanggal_kontrol'=> 'required',
         ]);
 
+        // 1. Olah Tanggal Kontrol (Format Y-m-d)
         try {
             $rawTgl = $request->tanggal_kontrol;
             if (str_contains($rawTgl, ',')) {
@@ -118,22 +109,39 @@ class HomeController extends Controller
             $tglKontrol = date('Y-m-d'); 
         }
 
+        // 2. Generate Kode Antrian
         $poliDb = Poli::where('name', $request->poli)->first();
-        $kodeHuruf = $poliDb ? $poliDb->kode : 'U';
+        $kodeHuruf = $poliDb ? $poliDb->kode : 'U'; // Misal: KK
         
-        $jumlahAntrian = Antrian::whereDate('tanggal_kontrol', $tglKontrol)
-                                ->where('no_antrian', 'LIKE', $kodeHuruf . '%')
-                                ->count();
+        // --- LOGIKA PENTING ---
+        // Cari antrian TERAKHIR HANYA PADA TANGGAL KONTROL TERSEBUT
+        // Jika Tgl 28: Dia cari yg tgl 28. Ketemu KK-001 -> lanjut KK-002
+        // Jika Tgl 29: Dia cari yg tgl 29. Tidak ketemu (kosong) -> Reset jadi KK-001
+        $latestAntrian = Antrian::whereDate('tanggal_kontrol', $tglKontrol)
+                                ->where('no_antrian', 'LIKE', $kodeHuruf . '-%') 
+                                ->orderBy('id', 'desc') 
+                                ->first();
+
+        if ($latestAntrian) {
+            // Jika hari ini SUDAH ADA antrian, ambil nomor terakhir + 1
+            $parts = explode('-', $latestAntrian->no_antrian);
+            $lastNumber = (int) end($parts);
+            $urutan = $lastNumber + 1;
+        } else {
+            // Jika hari ini BELUM ADA antrian, mulai dari 1
+            $urutan = 1;
+        }
         
-        $urutan = $jumlahAntrian + 1;
         $kodeFinal = $kodeHuruf . '-' . sprintf("%03d", $urutan);
 
+        // 3. Olah Tanggal Lahir
         try {
             $tglLahir = Carbon::createFromFormat('d-m-Y', $request->tanggal_lahir)->format('Y-m-d');
         } catch (\Exception $e) { 
             $tglLahir = date('Y-m-d'); 
         }
 
+        // 4. Simpan ke Database
         Antrian::create([
             'user_id'       => Auth::id(),
             'no_antrian'    => $kodeFinal,
@@ -157,7 +165,9 @@ class HomeController extends Controller
         $antrian = Antrian::where('id', $id)
                           ->where('user_id', Auth::id())
                           ->firstOrFail();
+
         $antrian->delete();
+
         return back()->with('success', 'Tiket antrian berhasil dibatalkan.');
     }
 }
