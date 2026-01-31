@@ -12,7 +12,7 @@ class Antrian extends Model
     protected $table = 'antrians';
 
     protected $fillable = [
-        'user_id', // <--- TAMBAHKAN INI
+        // 'user_id', // <--- INI SUDAH DIHAPUS
         'no_antrian',
         'nik',
         'nama_pasien',
@@ -26,9 +26,5 @@ class Antrian extends Model
         'status',
     ];
 
-    // Opsional: Relasi balik ke User
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+    // Relasi ke User juga DIHAPUS karena kolom foreign key 'user_id' sudah hilang.
 }

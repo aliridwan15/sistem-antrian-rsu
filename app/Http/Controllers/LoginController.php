@@ -7,43 +7,56 @@ use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
 {
+    // Tampilkan Form Login Admin
     public function showLoginForm()
     {
         return view('auth.login');
     }
 
+    // Proses Login
     public function login(Request $request)
     {
+        // 1. Validasi Input
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
+        // 2. Coba Login
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
-            $user = Auth::user();
-            $role = strtolower(trim($user->role));
+            // 3. CEK ROLE (KEAMANAN EKSTRA)
+            // Pastikan yang login BENAR-BENAR Admin. 
+            // Jika role 'pasien' (sisa data lama) mencoba masuk, tolak & logout.
+            if (Auth::user()->role !== 'admin') {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
 
-            // ✅ ADMIN LANGSUNG KE DASHBOARD (TANPA INTENDED)
-            if ($role === 'admin') {
-                return redirect()->route('admin.dashboard');
+                return back()->withErrors([
+                    'email' => 'Akses ditolak. Hanya Admin yang diperbolehkan masuk.',
+                ]);
             }
 
-            // ✅ USER BIASA
-            return redirect()->route('home');
+            // 4. Jika Admin, Masuk ke Dashboard
+            return redirect()->route('admin.dashboard');
         }
 
+        // 5. Jika Gagal
         return back()->withErrors([
             'email' => 'Email atau password salah.',
         ])->onlyInput('email');
     }
 
+    // Proses Logout
     public function logout(Request $request)
     {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('home');
+
+        // Redirect kembali ke halaman login admin
+        return redirect()->route('login')->with('success', 'Anda telah logout.');
     }
 }

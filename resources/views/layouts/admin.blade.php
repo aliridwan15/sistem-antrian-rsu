@@ -115,9 +115,9 @@
                 </div>
             </div>
 
-            {{-- Data Dokter --}}
+            {{-- UPDATE: Data Jadwal Dokter --}}
             <a href="{{ route('admin.dokter.index') }}" class="nav-link {{ request()->routeIs('admin.dokter*') ? 'active' : '' }}">
-                <i class="bi bi-person-video2"></i> Data Dokter
+                <i class="bi bi-calendar-range"></i> Data Jadwal Dokter
             </a>
 
             {{-- Data Poli --}}

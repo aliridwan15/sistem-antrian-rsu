@@ -10,14 +10,15 @@ class Doctor extends Model
     use HasFactory;
 
     protected $table = 'doctors';
-    protected $fillable = ['name']; // Gunakan fillable agar aman saat create
+    protected $fillable = ['name']; 
 
     // Relasi Many-to-Many ke Poli
     public function polis()
     {
-        return $this->belongsToMany(Poli::class, 'doctor_poli', 'doctor_id', 'poli_id')
-                    // WAJIB: Definisikan kolom tambahan tabel pivot disini agar bisa dibaca di View
-                    ->withPivot('day', 'time', 'note', 'status') 
+        // UPDATE: Parameter kedua diganti menjadi 'jadwal_dokter'
+        return $this->belongsToMany(Poli::class, 'jadwal_dokter', 'doctor_id', 'poli_id')
+                    // Definisikan kolom tambahan tabel pivot agar bisa dibaca di View
+                    ->withPivot('id', 'day', 'time', 'note', 'status') 
                     ->withTimestamps();
     }
 }

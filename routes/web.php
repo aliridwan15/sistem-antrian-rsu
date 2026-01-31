@@ -3,56 +3,67 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LoginController;
-use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\JadwalDokterController;
 use App\Http\Controllers\AdminController;
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes
+| JALUR PUBLIK (PASIEN - TANPA LOGIN)
 |--------------------------------------------------------------------------
+| Semua route di sini bisa diakses oleh siapa saja (tamu/pasien).
 */
+
+// 1. Halaman Utama
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// 2. Halaman Jadwal Dokter
 Route::get('/jadwal-dokter', [JadwalDokterController::class, 'index'])->name('jadwal.dokter');
 
+// 3. Proses Ambil Antrian
+Route::post('/ambil-antrian', [HomeController::class, 'storeAntrian'])->name('antrian.store');
+
+// 4. Halaman Tiket Saya (Otomatis via Cookie Device)
+Route::get('/tiket-antrian', [HomeController::class, 'showTicket'])->name('tiket.show');
+
+// 5. Halaman Cek Tiket (Pencarian Manual - Route Baru)
+// --- INI YANG DITAMBAHKAN AGAR ERROR HILANG ---
+Route::get('/cek-tiket', [HomeController::class, 'checkTicketPage'])->name('tiket.check');
+
+// 6. Download Tiket PDF
+Route::get('/tiket/download/{id}', [HomeController::class, 'downloadTicket'])->name('tiket.download');
+
+// 7. Batalkan Antrian
+Route::delete('/tiket-antrian/{id}', [HomeController::class, 'destroy'])->name('antrian.destroy');
+
+
 /*
 |--------------------------------------------------------------------------
-| Guest Routes (BELUM LOGIN)
+| JALUR TAMU KHUSUS ADMIN (LOGIN)
 |--------------------------------------------------------------------------
+| Hanya bisa diakses jika belum login. Khusus untuk Admin masuk sistem.
 */
 Route::middleware('guest')->group(function () {
+    // Halaman Login Admin
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    // Proses Login Admin
     Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
-
-    Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
 });
 
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 /*
 |--------------------------------------------------------------------------
-| Auth Routes (SUDAH LOGIN)
+| JALUR KHUSUS ADMIN (SUDAH LOGIN)
 |--------------------------------------------------------------------------
+| Semua route di sini WAJIB login sebagai Admin.
 */
 Route::middleware('auth')->group(function () {
 
-    // === USER / PASIEN ===
-    
-    // 1. Proses Ambil Antrian (POST)
-    Route::post('/ambil-antrian', [HomeController::class, 'storeAntrian'])->name('antrian.store');
+    // Logout
+    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-    // 2. Halaman Lihat Tiket (GET)
-    Route::get('/tiket-antrian', [HomeController::class, 'showTicket'])->name('tiket.show');
-
-    // 3. Hapus/Batalkan Antrian (DELETE)
-    Route::delete('/tiket-antrian/{id}', [HomeController::class, 'destroy'])->name('antrian.destroy');
-
-
-    // === ADMIN ===
+    // === GROUP ROUTE ADMIN ===
     Route::prefix('admin')
         ->name('admin.')
-        // ->middleware('role:admin') 
         ->group(function () {
         
             // Dashboard
@@ -74,7 +85,7 @@ Route::middleware('auth')->group(function () {
             Route::put('/data-poli/{id}', [AdminController::class, 'poliUpdate'])->name('poli.update');
             Route::delete('/data-poli/{id}', [AdminController::class, 'poliDestroy'])->name('poli.destroy');
 
-            // --- MENU LAPORAN (BARU) ---
+            // --- MENU LAPORAN ---
             Route::get('/laporan', [AdminController::class, 'laporanIndex'])->name('laporan.index');
     });
 

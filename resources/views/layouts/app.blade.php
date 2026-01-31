@@ -12,10 +12,10 @@
         body { font-family: 'Segoe UI', sans-serif; margin:0; padding:0; background-color: #f5f5f5; display: flex; flex-direction: column; min-height: 100vh; }
 
         /* --- GLOBAL BUTTON --- */
-        .btn-rs { background-color: #1B9C85; color: white; border-radius: 30px; padding: 8px 25px; transition: 0.3s; border: none; white-space: nowrap; }
-        .btn-rs:hover { background-color: #14806c; color: white; }
+        .btn-rs { background-color: #1B9C85; color: white; border-radius: 30px; padding: 8px 25px; transition: 0.3s; border: none; white-space: nowrap; font-weight: 600; }
+        .btn-rs:hover { background-color: #14806c; color: white; box-shadow: 0 4px 10px rgba(27, 156, 133, 0.3); }
 
-        /* --- NAVBAR STYLES (UPDATED) --- */
+        /* --- NAVBAR STYLES --- */
         .navbar { padding: 10px 0; }
         .navbar-logo { height: 45px; margin-right: 15px; }
 
@@ -33,29 +33,15 @@
         .navbar-nav .nav-link:hover::after, .navbar-nav .nav-link.active::after { width: 100%; }
 
         /* --- LAYOUT RESPONSIVE TANPA HAMBURGER --- */
-        /* Kita paksa navbar-collapse selalu tampil (display: flex) dan row-nya nowrap */
-        .navbar-expand-lg .navbar-collapse {
-            display: flex !important;
-            flex-basis: auto;
-        }
-        
-        .navbar-nav {
-            flex-direction: row; /* Selalu horizontal */
-            align-items: center;
-            flex-wrap: nowrap; /* Jangan turun ke bawah */
-        }
+        .navbar-expand-lg .navbar-collapse { display: flex !important; flex-basis: auto; }
+        .navbar-nav { flex-direction: row; align-items: center; flex-wrap: nowrap; }
 
-        /* Container Scrollable untuk layar sangat kecil agar tidak pecah */
+        /* Container Scrollable */
         .nav-scroller-wrapper {
-            display: flex;
-            align-items: center;
-            flex-grow: 1;
-            overflow-x: auto; /* Scroll samping jika sempit */
-            scrollbar-width: none; /* Hide scrollbar Firefox */
-            -ms-overflow-style: none;  /* Hide scrollbar IE */
-            padding-right: 10px; /* Jarak aman */
+            display: flex; align-items: center; flex-grow: 1; overflow-x: auto; 
+            scrollbar-width: none; -ms-overflow-style: none; padding-right: 10px;
         }
-        .nav-scroller-wrapper::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome */
+        .nav-scroller-wrapper::-webkit-scrollbar { display: none; }
 
         /* --- USER DROPDOWN STYLE --- */
         .user-dropdown-link { 
@@ -98,43 +84,59 @@
         .footer-link { color: #1B9C85; text-decoration: none; font-weight: 600; transition: 0.3s; }
         .footer-link:hover { color: #14806c; text-decoration: underline; }
 
-        /* Hide elements on mobile to save space */
         @media (max-width: 991px) {
-            .contact-text-wrapper, .social-link { display: none; } /* Hide kontak & sosmed di mobile */
+            .contact-text-wrapper, .social-link { display: none; }
             .contact-wrapper { border: none; padding: 0; margin: 0; }
-            .navbar-logo { height: 35px; margin-right: 10px; } /* Logo lebih kecil */
+            .navbar-logo { height: 35px; margin-right: 10px; }
         }
     </style>
 </head>
 <body>
 
     <nav class="navbar navbar-expand-lg bg-white shadow-sm fixed-top">
-        <div class="container-fluid px-3 px-lg-5"> <a class="navbar-brand d-flex align-items-center" href="{{ route('home') }}">
+        <div class="container-fluid px-3 px-lg-5"> 
+            <a class="navbar-brand d-flex align-items-center" href="{{ route('home') }}">
                 <img src="{{ asset('images/logors.png') }}" alt="Logo" class="navbar-logo"> 
             </a>
 
             <div class="nav-scroller-wrapper">
-                <ul class="navbar-nav me-auto mb-0"> <li class="nav-item"><a class="nav-link" href="{{ route('home') }}">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('jadwal.dokter') }}">Jadwal Dokter</a></li>
+                <ul class="navbar-nav me-auto mb-0"> 
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('jadwal.dokter') ? 'active' : '' }}" href="{{ route('jadwal.dokter') }}">Jadwal Dokter</a>
+                    </li>
                     
-                    @auth
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('tiket.show') }}">Antrian Saya</a>
-                        </li>
-                    @endauth
+                    {{-- MENU 1: Tiket Saya (Cookie Device) --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('tiket.show') ? 'active' : '' }}" href="{{ route('tiket.show') }}">Tiket Saya</a>
+                    </li>
+
+                    {{-- MENU 2: Cek Tiket (Pencarian Umum) --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('tiket.check') ? 'active' : '' }}" href="{{ route('tiket.check') }}">Cek Tiket</a>
+                    </li>
                 </ul>
             </div>
 
             <ul class="navbar-nav ms-auto mb-0 align-items-center">
                 
                 @auth
+                    {{-- TAMPILAN JIKA ADMIN LOGIN --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle fw-bold user-dropdown-link" 
                            href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle me-1 fs-5"></i> 
+                            <i class="bi bi-shield-lock-fill me-1 fs-5"></i> 
                             <span class="d-none d-sm-inline">{{ Auth::user()->name }}</span> <i class="bi bi-chevron-down"></i>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="userDropdown">
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="{{ route('admin.dashboard') }}">
+                                    <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form action="{{ route('logout') }}" method="POST">
                                     @csrf
@@ -146,9 +148,12 @@
                         </ul>
                     </li>
                 @else
-                    <li class="nav-item"><a class="btn btn-rs" href="{{ route('login') }}">Login</a></li>
+                    {{-- TAMPILAN JIKA PASIEN (GUEST) --}}
+                    {{-- TOMBOL HIJAU 'TIKET SAYA' DI KANAN DIHAPUS (Sesuai Request) --}}
+                    {{-- Menu 'Tiket Saya' dan 'Cek Tiket' sudah ada di Navbar kiri --}}
                 @endauth
 
+                {{-- Kontak Info (Desktop Only) --}}
                 <li class="nav-item d-none d-lg-block">
                     <div class="contact-wrapper">
                         <div class="contact-text-wrapper">
@@ -179,8 +184,13 @@
                     <a href="https://www.google.com/maps/place/RSU+Anna+Medika+Madura/@-7.0496739,112.729804,15z/data=!4m5!3m4!1s0x0:0x79ff9f7e3ebc3566!8m2!3d-7.0496739!4d112.729804?sa=X&ved=2ahUKEwjwtvjp1qP8AhVW3nMBHWZZCIwQ_BJ6BAhfEAg&coh=164777&entry=tt&shorturl=1" target="_blank" class="footer-link">Alamat Kami <i class="bi bi-arrow-right ms-1"></i></a>
                 </div>
             </div>
-            <div class="text-center mt-4 pt-3 border-top">
+            <div class="text-center mt-4 pt-3 border-top d-flex flex-column align-items-center gap-1">
                 <small class="text-muted">© {{ date('Y') }} RSU Anna Medika Madura. All rights reserved.</small>
+                
+                {{-- Link Login Admin Tersembunyi/Kecil di Footer --}}
+                @guest
+                    <a href="{{ route('login') }}" class="text-decoration-none text-muted" style="font-size: 0.7rem;">Login Staff</a>
+                @endguest
             </div>
         </div>
     </footer>

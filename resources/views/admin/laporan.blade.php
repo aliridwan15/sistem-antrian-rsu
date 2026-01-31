@@ -18,7 +18,7 @@
             <select name="bulan" class="form-select shadow-sm" style="width: auto;" onchange="this.form.submit()">
                 @for($i = 1; $i <= 12; $i++)
                     <option value="{{ sprintf('%02d', $i) }}" {{ $bulan == sprintf('%02d', $i) ? 'selected' : '' }}>
-                        {{ \Carbon\Carbon::createFromDate(null, $i)->locale('id')->isoFormat('MMMM') }}
+                       {{ \Carbon\Carbon::createFromDate(null, $i, 1)->locale('id')->isoFormat('MMMM') }}
                     </option>
                 @endfor
             </select>

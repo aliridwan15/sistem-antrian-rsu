@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\DB; // Tambahkan DB Facade
 use App\Models\Poli;
-use App\Models\Doctor;
 use App\Models\Antrian;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class HomeController extends Controller
 {
@@ -19,70 +20,76 @@ class HomeController extends Controller
             $polis[] = ['nama' => $p->name, 'icon' => $p->icon];
         }
 
-        // Mapping Hari ke Angka Javascript
         $dayMap = [
             'Minggu' => 0, 'Senin' => 1, 'Selasa' => 2, 'Rabu' => 3, 
             'Kamis' => 4, 'Jumat' => 5, 'Sabtu' => 6
         ];
 
+        // --- PERBAIKAN 1: Ambil Jadwal Pakai Query Builder (Lebih Akurat) ---
+        $schedules = DB::table('jadwal_dokter')
+            ->join('doctors', 'jadwal_dokter.doctor_id', '=', 'doctors.id')
+            ->join('polis', 'jadwal_dokter.poli_id', '=', 'polis.id')
+            ->select('doctors.name as doc_name', 'polis.name as poli_name', 'jadwal_dokter.day', 'jadwal_dokter.time')
+            ->where('jadwal_dokter.status', 'Aktif')
+            ->get();
+
         $doctors = [];
-        
-        $polisWithDoctors = Poli::with(['doctors' => function($q) {
-            $q->select('doctors.id', 'doctors.name')
-              ->wherePivot('status', 'Aktif'); 
-        }])->get();
 
-        foreach ($polisWithDoctors as $p) {
-            $docData = [];
-            foreach ($p->doctors as $doc) {
-                $rawDaysString = $doc->pivot->day; 
-                $daysArray = explode(',', $rawDaysString);
+        foreach ($schedules as $s) {
+            $daysArray = explode(',', $s->day);
+            
+            // --- PERBAIKAN 2: Normalisasi Format Jam (08.30 -> 08:30) ---
+            $jamMentah = explode('-', $s->time)[0]; // Ambil "08.30" dari "08.30-12.00"
+            $jamBersih = str_replace('.', ':', trim($jamMentah)); // Ubah titik jadi titik dua
+            
+            try {
+                // Paksa format H:i (08:30) agar JS bisa baca
+                $startTime = Carbon::parse($jamBersih)->format('H:i');
+            } catch (\Exception $e) {
+                $startTime = '08:00'; // Default jika error
+            }
 
-                foreach ($daysArray as $singleDay) {
-                    $hariBersih = ucfirst(strtolower(trim($singleDay)));
-                    if (isset($dayMap[$hariBersih])) {
-                        $dayIndex = $dayMap[$hariBersih];
-                        $docData[$doc->name][] = $dayIndex;
-                    }
+            foreach ($daysArray as $day) {
+                $hariBersih = ucfirst(strtolower(trim($day)));
+                if (isset($dayMap[$hariBersih])) {
+                    $idx = $dayMap[$hariBersih];
+                    // Struktur: [Poli][Dokter][IndexHari] = "08:30"
+                    $doctors[$s->poli_name][$s->doc_name][$idx] = $startTime;
                 }
             }
-            
-            foreach($docData as $name => $days) {
-                $uniqueDays = array_unique($days);
-                sort($uniqueDays);
-                $docData[$name] = $uniqueDays;
-            }
-
-            if (!empty($docData)) {
-                $doctors[$p->name] = $docData;
-            }
         }
 
-        if (empty($doctors)) {
-             $doctors['Lainnya'] = [];
-        }
+        if (empty($doctors)) $doctors['Lainnya'] = [];
 
         return view('home', compact('polis', 'doctors'));
     }
 
-    public function showTicket()
+    public function checkTicketPage(Request $request)
     {
-        if (!Auth::check()) {
-            return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu untuk melihat tiket.');
-        }
-
-        $userId = Auth::id();
-
-        $antrians = Antrian::where('user_id', $userId)
-                            ->whereIn('status', ['Menunggu', 'Dipanggil'])
-                            ->whereDate('tanggal_kontrol', '>=', Carbon::today()) 
+        $antrians = Antrian::whereIn('status', ['Menunggu', 'Dipanggil'])
+                            ->whereDate('tanggal_kontrol', '>=', Carbon::today())
                             ->orderBy('tanggal_kontrol', 'asc')
                             ->get();
+        return view('check-ticket', compact('antrians'));
+    }
 
+    public function showTicket(Request $request)
+    {
+        $riwayatJson = $request->cookie('riwayat_antrian', '[]');
+        $riwayatIds = json_decode($riwayatJson, true);
+
+        if (!empty($riwayatIds) && is_array($riwayatIds)) {
+            $antrians = Antrian::whereIn('id', $riwayatIds)
+                                ->whereIn('status', ['Menunggu', 'Dipanggil'])
+                                ->whereDate('tanggal_kontrol', '>=', Carbon::today()) 
+                                ->orderBy('tanggal_kontrol', 'asc')
+                                ->get();
+        } else {
+            $antrians = collect();
+        }
         return view('ticket', compact('antrians'));
     }
 
-    // --- LOGIKA RESET PER HARI ADA DI SINI ---
     public function storeAntrian(Request $request)
     {
         $request->validate([
@@ -90,60 +97,85 @@ class HomeController extends Controller
             'nama_pasien'   => 'required|string|max:255',
             'tanggal_lahir' => 'required',
             'jenis_kelamin' => 'required',
-            'nomor_hp'      => 'required|numeric',
+            'nomor_hp'      => 'required|numeric', 
             'poli'          => 'required',
             'dokter'        => 'required',
             'alamat'        => 'required',
-            'tanggal_kontrol'=> 'required',
+            'tanggal_kontrol'=> 'required', 
         ]);
 
-        // 1. Olah Tanggal Kontrol (Format Y-m-d)
         try {
-            $rawTgl = $request->tanggal_kontrol;
-            if (str_contains($rawTgl, ',')) {
-                $parts = explode(',', $rawTgl);
-                $rawTgl = trim(end($parts)); 
+            $rawInput = $request->tanggal_kontrol;
+            if (str_contains($rawInput, ',')) {
+                $parts = explode(',', $rawInput);
+                $rawInput = trim(end($parts)); 
             }
-            $tglKontrol = Carbon::createFromFormat('d-m-Y', $rawTgl)->format('Y-m-d');
+            $tglKontrolDate = Carbon::createFromFormat('d-m-Y', $rawInput);
+            $tglKontrol = $tglKontrolDate->format('Y-m-d');
         } catch (\Exception $e) { 
-            $tglKontrol = date('Y-m-d'); 
+            return back()->with('error', 'Format tanggal salah.')->withInput();
         }
 
-        // 2. Generate Kode Antrian
+        // --- PERBAIKAN 3: Validasi Server Side yang Lebih Ketat ---
+        if ($tglKontrolDate->isToday()) {
+            
+            // Cari Data Poli & Dokter
+            $poliDb = Poli::where('name', $request->poli)->first();
+            
+            if ($poliDb) {
+                // Cari jadwal dokter TERSEBUT di HARI INI
+                $hariIni = Carbon::now()->locale('id')->isoFormat('dddd'); // Misal: "Senin"
+                
+                $jadwalTepat = DB::table('jadwal_dokter')
+                    ->join('doctors', 'jadwal_dokter.doctor_id', '=', 'doctors.id')
+                    ->where('doctors.name', $request->dokter)
+                    ->where('jadwal_dokter.poli_id', $poliDb->id)
+                    ->where('jadwal_dokter.day', 'LIKE', "%{$hariIni}%") // Cari yang harinya cocok
+                    ->first();
+
+                if ($jadwalTepat && $jadwalTepat->time) {
+                    $jamMentah = explode('-', $jadwalTepat->time)[0];
+                    $jamBersih = str_replace('.', ':', trim($jamMentah));
+                    
+                    try {
+                        // Set Waktu Jadwal Mulai Hari Ini
+                        $jadwalMulai = Carbon::parse($jamBersih); // 08:30 Hari Ini
+                        $batasAkhir = $jadwalMulai->copy()->addHours(3); // 11:30 Hari Ini
+                        
+                        // Jika Sekarang (15:00) > Batas (11:30) -> TOLAK
+                        if (Carbon::now()->gt($batasAkhir)) {
+                            return back()->with('error', 'Pendaftaran HARI INI ditutup. Batas daftar pukul ' . $batasAkhir->format('H:i') . '.')->withInput();
+                        }
+                    } catch (\Exception $e) {}
+                }
+            }
+        }
+
         $poliDb = Poli::where('name', $request->poli)->first();
-        $kodeHuruf = $poliDb ? $poliDb->kode : 'U'; // Misal: KK
+        $kodeHuruf = $poliDb ? $poliDb->kode : 'U';
         
-        // --- LOGIKA PENTING ---
-        // Cari antrian TERAKHIR HANYA PADA TANGGAL KONTROL TERSEBUT
-        // Jika Tgl 28: Dia cari yg tgl 28. Ketemu KK-001 -> lanjut KK-002
-        // Jika Tgl 29: Dia cari yg tgl 29. Tidak ketemu (kosong) -> Reset jadi KK-001
         $latestAntrian = Antrian::whereDate('tanggal_kontrol', $tglKontrol)
                                 ->where('no_antrian', 'LIKE', $kodeHuruf . '-%') 
                                 ->orderBy('id', 'desc') 
                                 ->first();
 
         if ($latestAntrian) {
-            // Jika hari ini SUDAH ADA antrian, ambil nomor terakhir + 1
             $parts = explode('-', $latestAntrian->no_antrian);
             $lastNumber = (int) end($parts);
             $urutan = $lastNumber + 1;
         } else {
-            // Jika hari ini BELUM ADA antrian, mulai dari 1
             $urutan = 1;
         }
         
         $kodeFinal = $kodeHuruf . '-' . sprintf("%03d", $urutan);
 
-        // 3. Olah Tanggal Lahir
         try {
             $tglLahir = Carbon::createFromFormat('d-m-Y', $request->tanggal_lahir)->format('Y-m-d');
         } catch (\Exception $e) { 
             $tglLahir = date('Y-m-d'); 
         }
 
-        // 4. Simpan ke Database
-        Antrian::create([
-            'user_id'       => Auth::id(),
+        $antrian = Antrian::create([
             'no_antrian'    => $kodeFinal,
             'nik'           => $request->nik,
             'nama_pasien'   => $request->nama_pasien,
@@ -153,21 +185,42 @@ class HomeController extends Controller
             'alamat'        => $request->alamat,
             'poli'          => $request->poli,
             'dokter'        => $request->dokter,
-            'tanggal_kontrol'=> $tglKontrol,
+            'tanggal_kontrol'=> $tglKontrol, 
             'status'        => 'Menunggu',
         ]);
 
-        return redirect()->route('tiket.show')->with('success', 'Pendaftaran Berhasil! Silakan cek tiket antrian Anda.');
+        $riwayatJson = $request->cookie('riwayat_antrian', '[]');
+        $riwayatIds = json_decode($riwayatJson, true);
+        if (!is_array($riwayatIds)) $riwayatIds = [];
+        $riwayatIds[] = $antrian->id;
+        $cookie = Cookie::make('riwayat_antrian', json_encode($riwayatIds), 525600);
+
+        return redirect()->route('tiket.show')
+            ->withCookie($cookie)
+            ->with('success', 'Pendaftaran Berhasil! Silakan unduh tiket Anda.');
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $antrian = Antrian::where('id', $id)
-                          ->where('user_id', Auth::id())
-                          ->firstOrFail();
+        $riwayatJson = $request->cookie('riwayat_antrian', '[]');
+        $riwayatIds = json_decode($riwayatJson, true);
 
-        $antrian->delete();
+        if (!is_array($riwayatIds) || !in_array($id, $riwayatIds)) {
+            return back()->with('error', 'Anda tidak memiliki akses untuk membatalkan antrian ini.');
+        }
+
+        $antrian = Antrian::find($id); 
+        if($antrian) {
+            $antrian->delete();
+        }
 
         return back()->with('success', 'Tiket antrian berhasil dibatalkan.');
+    }
+
+    public function downloadTicket(Request $request, $id)
+    {
+        $antrian = Antrian::findOrFail($id);
+        $pdf = Pdf::loadView('pdf.tiket_download', compact('antrian'))->setPaper('a6', 'portrait');
+        return $pdf->download('Tiket-Antrian-' . $antrian->no_antrian . '.pdf');
     }
 }

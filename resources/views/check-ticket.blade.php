@@ -1,22 +1,17 @@
 @extends('layouts.app')
 
-@section('title', 'Tiket Antrian Saya - RSU Anna Medika')
+@section('title', 'Cari Tiket Antrian - RSU Anna Medika')
 
 @section('content')
 
 <style>
-    /* --- BACKGROUND HALAMAN WEB --- */
     body::before {
         content: ""; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
         background-image: url('{{ asset('images/rsanna.jpg') }}');
         background-position: center; background-size: cover; background-repeat: no-repeat;
         opacity: 0.15; z-index: -1; filter: grayscale(100%);
     }
-
-    /* CSS Container */
     .ticket-container { padding: 40px 20px; padding-bottom: 100px; }
-
-    /* CSS Card Tiket */
     .ticket-card {
         background: white; border-radius: 16px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.08);
@@ -26,22 +21,7 @@
         transition: transform 0.2s;
         z-index: 1;
     }
-    
-    @media screen {
-        .ticket-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.15); }
-    }
-
-    /* CSS Placeholder */
-    .empty-ticket-card {
-        background: rgba(255, 255, 255, 0.85); border: 2px dashed #adb5bd; border-radius: 16px;
-        padding: 40px 30px; text-align: center; max-width: 400px; margin: 0 auto;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        min-height: 350px; transition: all 0.3s ease;
-    }
-    .empty-ticket-card:hover { background: white; border-color: #1B9C85; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-
     .ticket-header { height: 10px; background: linear-gradient(to right, #1B9C85, #14806c); }
-    
     .dashed-line { border-top: 3px dashed #d1d5db; margin: 20px 0; position: relative; width: 100%; }
     .dashed-line::before, .dashed-line::after {
         content: ""; position: absolute; width: 24px; height: 24px;
@@ -49,46 +29,32 @@
     }
     .dashed-line::before { left: -12px; border-left: 0; }
     .dashed-line::after { right: -12px; border-right: 0; }
-
     .ticket-content { padding: 25px; text-align: center; }
-    
     .nomor-antrian {
         font-size: 3.5rem; font-weight: 800; color: #1B9C85;
         font-family: 'Courier New', monospace; line-height: 1; margin: 10px 0;
     }
-    
     .info-table { width: 100%; margin-top: 20px; text-align: left; font-size: 0.9rem; }
     .info-table td { padding: 4px 0; vertical-align: top; }
     .info-table .val { font-weight: 600; text-align: right; }
-
     .ticket-actions { 
         background: #f8f9fa; padding: 15px; border-top: 1px solid #eee; 
         display: grid; grid-template-columns: 1fr 1fr; gap: 10px; 
     }
-    .btn-delete-ticket { grid-column: span 2; margin-top: 5px; }
-    .btn:focus, .btn:active { outline: none !important; box-shadow: none !important; }
-
-    /* Filter Box Style */
     .filter-box {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 30px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        border: 1px solid #eee;
+        background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 20px;
+        margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eee;
     }
+    /* Animasi Fade In */
+    .fade-in { animation: fadeIn 0.5s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 
 <div class="container ticket-container">
-    @if(session('success'))
-        <div class="alert alert-success border-0 bg-success bg-opacity-10 text-success mb-4 text-center mx-auto shadow-sm" style="max-width: 600px;">
-            <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
-        </div>
-    @endif
-
     <div class="text-center mb-4">
-        <h3 class="fw-bold text-dark">Antrian Aktif Anda</h3>
-        <p class="text-muted">Berikut adalah daftar tiket antrian yang Anda miliki hari ini.</p>
+        {{-- JUDUL DIPERBAIKI --}}
+        <h3 class="fw-bold text-dark">Cari Tiket Antrian</h3>
+        <p class="text-muted">Cari tiket antrian Anda (Tanpa Login)</p>
     </div>
 
     {{-- FILTER SECTION --}}
@@ -99,14 +65,13 @@
                 <label class="form-label small text-muted fw-bold">Cari Nama Pasien</label>
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" id="filterNama" class="form-control border-start-0" placeholder="Ketik nama...">
+                    <input type="text" id="filterNama" class="form-control border-start-0" placeholder="Ketik nama untuk mencari...">
                 </div>
             </div>
             <div class="col-md-4">
                 <label class="form-label small text-muted fw-bold">Filter Poli</label>
                 <select id="filterPoli" class="form-select">
                     <option value="">Semua Poli</option>
-                    {{-- Loop Poli Unik --}}
                     @foreach($antrians->pluck('poli')->unique()->sort() as $p)
                         <option value="{{ $p }}">{{ $p }}</option>
                     @endforeach
@@ -116,16 +81,18 @@
                 <label class="form-label small text-muted fw-bold">Filter Dokter</label>
                 <select id="filterDokter" class="form-select" disabled>
                     <option value="">Semua Dokter</option>
-                    {{-- Dokter akan diisi via JavaScript --}}
                 </select>
             </div>
+        </div>
+        <div class="text-center mt-3">
+            <small class="text-muted fst-italic">*Hasil pencarian akan muncul otomatis saat Anda mengetik</small>
         </div>
     </div>
     @endif
 
-    {{-- DAFTAR TIKET --}}
-    <div class="row g-4 justify-content-center" id="ticketList">
-        @forelse($antrians as $antrian)
+    {{-- DAFTAR TIKET (DEFAULT HIDDEN: d-none) --}}
+    <div class="row g-4 justify-content-center d-none fade-in" id="ticketList">
+        @foreach($antrians as $antrian)
             <div class="col-md-6 col-lg-4 ticket-item" 
                  data-nama="{{ strtolower($antrian->nama_pasien) }}" 
                  data-poli="{{ $antrian->poli }}" 
@@ -159,19 +126,14 @@
                                 <td class="text-muted">Tgl</td>
                                 <td class="val">{{ \Carbon\Carbon::parse($antrian->tanggal_kontrol)->format('d-m-Y') }}</td>
                             </tr>
-                            {{-- BARIS STATUS DIHAPUS --}}
                         </table>
 
-                        {{-- PESAN HIMBAUAN --}}
                         <div class="mt-3 p-2 bg-warning bg-opacity-10 rounded border border-warning border-opacity-25">
                             <p class="mb-0 small text-muted fst-italic" style="font-size: 0.75rem;">
                                 <i class="bi bi-info-circle me-1"></i>
-                                Mohon hadir 30 menit sebelum jadwal praktik dokter untuk verifikasi data.
+                                Mohon hadir 30 menit sebelum jadwal praktik.
                             </p>
                         </div>
-
-                        <p class="text-muted mt-3 mb-0 fw-bold" style="font-size: 0.75rem;">"Terima Kasih Atas Kunjungan Anda"</p>
-                        <small class="text-muted d-none d-print-block mt-1" style="font-size: 0.65rem;">Dicetak: {{ date('d-m-Y H:i') }}</small>
                     </div>
                     
                     <div class="ticket-actions">
@@ -181,33 +143,24 @@
                         <a href="{{ route('tiket.download', $antrian->id) }}" class="btn btn-rs btn-sm rounded-pill">
                             <i class="bi bi-download"></i> Unduh PDF
                         </a>
-                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill btn-delete-ticket" 
-                                onclick="confirmDelete('{{ $antrian->id }}', '{{ $antrian->no_antrian }}')">
-                            <i class="bi bi-trash"></i> Batalkan / Hapus
-                        </button>
                     </div>
                 </div>
             </div>
-        @empty
-            <div class="col-12 text-center">
-                <div class="empty-ticket-card">
-                    <div class="mb-4 text-secondary opacity-25">
-                        <i class="bi bi-ticket-perforated display-1"></i>
-                    </div>
-                    <h5 class="fw-bold text-dark mb-2">Belum Memiliki Antrian</h5>
-                    <p class="text-muted mb-4 px-md-4">
-                        Mohon maaf, Anda belum terdaftar dalam antrian poliklinik untuk hari ini. Silakan melakukan pendaftaran terlebih dahulu melalui menu utama.
-                    </p>
-                    <a href="{{ route('home') }}" class="btn btn-rs rounded-pill px-5 py-2 shadow-sm fw-bold">
-                        <i class="bi bi-pencil-square me-2"></i>Daftar Antrian Sekarang
-                    </a>
-                </div>
-            </div>
-        @endforelse
+        @endforeach
     </div>
     
+    {{-- PESAN JIKA TIDAK DITEMUKAN --}}
     <div id="noResult" class="text-center py-5 d-none">
-        <p class="text-muted fw-bold">Tidak ditemukan tiket yang cocok dengan filter Anda.</p>
+        <div class="mb-3 text-muted opacity-50"><i class="bi bi-search display-1"></i></div>
+        <h5 class="text-muted fw-bold">Data tidak ditemukan</h5>
+        <p class="text-muted small">Coba kata kunci lain atau pastikan nama sudah benar.</p>
+    </div>
+
+    {{-- PESAN DEFAULT (SAAT BELUM CARI) --}}
+    <div id="startSearchMessage" class="text-center py-5">
+        <div class="mb-3 text-muted opacity-25"><i class="bi bi-person-badge display-1"></i></div>
+        <h5 class="text-muted fw-bold">Silakan Cari Nama Pasien</h5>
+        <p class="text-muted small">Ketik nama pasien di kolom pencarian untuk melihat hasil tiket.</p>
     </div>
 </div>
 
@@ -223,95 +176,75 @@
     </div>
 </div>
 
-{{-- MODAL KONFIRMASI HAPUS --}}
-<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content border-0 shadow rounded-4">
-            <div class="modal-body text-center p-4">
-                <div class="mb-3 text-danger opacity-75">
-                    <i class="bi bi-exclamation-circle display-1"></i>
-                </div>
-                <h5 class="fw-bold mb-2 text-dark">Batalkan Antrian?</h5>
-                <p class="text-muted small mb-4">
-                    Apakah Anda yakin ingin membatalkan antrian <strong id="deleteTicketNo" class="text-dark"></strong>? Tindakan ini tidak dapat dibatalkan.
-                </p>
-                <form id="deleteForm" action="" method="POST" class="d-grid gap-2">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger rounded-pill fw-bold">Ya, Batalkan</button>
-                    <button type="button" class="btn btn-light rounded-pill text-muted" data-bs-dismiss="modal">Tidak, Kembali</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const filterNama = document.getElementById('filterNama');
         const filterPoli = document.getElementById('filterPoli');
         const filterDokter = document.getElementById('filterDokter');
+        const ticketList = document.getElementById('ticketList'); // Container Utama
         const ticketItems = document.querySelectorAll('.ticket-item');
         const noResult = document.getElementById('noResult');
+        const startMsg = document.getElementById('startSearchMessage');
 
-        // 1. SIAPKAN DATA RELASI POLI -> DOKTER DARI HTML YANG ADA
         let poliDokterMap = {};
         let allDoctors = new Set(); 
 
+        // 1. DATA PREPARATION (Ambil data dari HTML hidden elements)
         ticketItems.forEach(item => {
             let p = item.getAttribute('data-poli');
             let d = item.getAttribute('data-dokter');
-            
-            if (!poliDokterMap[p]) {
-                poliDokterMap[p] = new Set();
-            }
+            if (!poliDokterMap[p]) poliDokterMap[p] = new Set();
             poliDokterMap[p].add(d);
             allDoctors.add(d);
         });
 
-        // Initial Load
-        populateDokter(allDoctors);
+        if (allDoctors.size > 0) populateDokter(allDoctors);
 
-        // 2. FUNGSI UNTUK MENGISI DROPDOWN DOKTER
         function populateDokter(doctorSet) {
             let currentSelected = filterDokter.value;
             filterDokter.innerHTML = '<option value="">Semua Dokter</option>';
-            
             Array.from(doctorSet).sort().forEach(doc => {
                 let opt = document.createElement('option');
                 opt.value = doc;
                 opt.textContent = doc;
                 filterDokter.appendChild(opt);
             });
-
             filterDokter.disabled = false;
-
-            if (doctorSet.has(currentSelected)) {
-                filterDokter.value = currentSelected;
-            } else {
-                filterDokter.value = "";
-            }
+            if (doctorSet.has(currentSelected)) filterDokter.value = currentSelected;
+            else filterDokter.value = "";
         }
 
-        // 3. EVENT LISTENER SAAT POLI BERUBAH
-        filterPoli.addEventListener('change', function() {
-            const selectedPoli = this.value;
+        if(filterPoli) {
+            filterPoli.addEventListener('change', function() {
+                const selectedPoli = this.value;
+                if (selectedPoli === "") populateDokter(allDoctors);
+                else {
+                    let doctorsInPoli = poliDokterMap[selectedPoli] || new Set();
+                    populateDokter(doctorsInPoli);
+                }
+                filterTickets();
+            });
+        }
 
-            if (selectedPoli === "") {
-                populateDokter(allDoctors);
-            } else {
-                let doctorsInPoli = poliDokterMap[selectedPoli] || new Set();
-                populateDokter(doctorsInPoli);
-            }
-            
-            filterTickets();
-        });
-
-        // 4. FUNGSI UTAMA FILTER TIKET
+        // 2. LOGIC FILTER UTAMA (Sembunyikan/Tampilkan Tiket)
         function filterTickets() {
-            const namaVal = filterNama.value.toLowerCase();
+            const namaVal = filterNama.value.toLowerCase().trim(); // Trim spasi
             const poliVal = filterPoli.value;
             const dokterVal = filterDokter.value;
+            
+            // JIKA BELUM ADA INPUT NAMA (Minimal 3 karakter biar gak spam)
+            // Logic: Kalau nama < 3 karakter, sembunyikan semua tiket.
+            if (namaVal.length < 3) {
+                ticketList.classList.add('d-none'); // Sembunyikan hasil
+                startMsg.classList.remove('d-none'); // Tampilkan pesan "Silakan Cari"
+                noResult.classList.add('d-none');
+                return; 
+            }
+
+            // JIKA SUDAH ADA INPUT >= 3 Karakter -> TAMPILKAN CONTAINER HASIL
+            ticketList.classList.remove('d-none');
+            startMsg.classList.add('d-none');
+
             let visibleCount = 0;
 
             ticketItems.forEach(item => {
@@ -324,14 +257,15 @@
                 const matchDokter = dokterVal === "" || dokter === dokterVal;
 
                 if (matchNama && matchPoli && matchDokter) {
-                    item.style.display = ""; 
+                    item.style.display = ""; // Tampilkan card tiket ini
                     visibleCount++;
                 } else {
-                    item.style.display = "none"; 
+                    item.style.display = "none"; // Sembunyikan card tiket ini
                 }
             });
 
-            if (visibleCount === 0 && ticketItems.length > 0) {
+            // Handle No Result
+            if (visibleCount === 0) {
                 noResult.classList.remove('d-none');
             } else {
                 noResult.classList.add('d-none');
@@ -341,14 +275,6 @@
         if(filterNama) filterNama.addEventListener('input', filterTickets);
         if(filterDokter) filterDokter.addEventListener('change', filterTickets);
     });
-
-    function confirmDelete(id, noAntrian) {
-        let url = "{{ route('antrian.destroy', ':id') }}";
-        url = url.replace(':id', id);
-        document.getElementById('deleteForm').action = url;
-        document.getElementById('deleteTicketNo').innerText = noAntrian;
-        new bootstrap.Modal(document.getElementById('deleteConfirmModal')).show();
-    }
 
     function showDetail(id) {
         const source = document.getElementById('ticket-' + id);
